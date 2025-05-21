@@ -1,0 +1,3 @@
+/home/doraemon/Workspace/learn/DFA/lab1/build/CMakeFiles/smlt.dir
+/home/doraemon/Workspace/learn/DFA/lab1/build/CMakeFiles/edit_cache.dir
+/home/doraemon/Workspace/learn/DFA/lab1/build/CMakeFiles/rebuild_cache.dir

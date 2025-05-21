@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/doraemon/Workspace/learn/DFA/lab1/build",
+  "command": "/usr/bin/clang++    -pthread -std=gnu++17 -o CMakeFiles/smlt.dir/simulation.o -c /home/doraemon/Workspace/learn/DFA/lab1/simulation.cpp",
+  "file": "/home/doraemon/Workspace/learn/DFA/lab1/simulation.cpp"
+}
+]

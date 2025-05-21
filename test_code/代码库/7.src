@@ -1,0 +1,21 @@
+float calc() {
+    return 8.88
+};
+ast
+parser
+semanic
+codegen->asm
+
+ifstmt: 'if', '(', valuestmt ,')', compoundstmt
+valuestmt: xxxxx
+compoundstmt: stmt | '{', stmt, ... ,'}'
+if(fdsf) {
+ stmt
+ stmt   
+}
+if() {
+    1
+    2
+    3
+}
+calc()
