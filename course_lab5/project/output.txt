@@ -1,0 +1,317 @@
+文件：./design.md
+内容：
+很好，目前项目已经有了基础的词法分析和硬编码的控制结构生成函数。为了逐步实现支持你列出的全部语句产生式，我们可以按如下几个阶段推进：
+
+---
+
+## ✅ 阶段性目标与推荐顺序
+
+### **第一阶段：基础语句支持**
+
+实现所有简单 `S → ...` 类型语句的中间代码生成：
+
+| 语句类型           | 状态   | 下一步建议             |
+| -------------- | ---- | ----------------- |
+| `S → d = E`    | ❌未实现 | ✅ 实现赋值解析与表达式计算生成  |
+| `S → return E` | ❌未实现 | ✅ 实现 return 表达式计算 |
+| `S → d(Ř)`     | ❌未实现 | ✅ 支持函数调用的参数与调用生成  |
+| `S → d[Ě] = E` | ✅硬编码 | 🔁 改为解析式输入        |
+
+> 建议下一步优先完成：**赋值语句、return 语句、函数调用、数组赋值的解析化**
+
+---
+
+### **第二阶段：布尔表达式与控制语句**
+
+增强布尔条件判断与跳转支持：
+
+| 控制结构                  | 状态    | 下一步建议            |
+| --------------------- | ----- | ---------------- |
+| `S → if (B) S`        | ✅简化支持 | 🔁 支持布尔表达式和任意语句块 |
+| `S → if (B) S else S` | ✅简化支持 | 🔁 支持嵌套语句与通用解析   |
+| `S → while (B) S`     | ✅简化支持 | 🔁 使用布尔表达式解析判断条件 |
+
+> 建议第二阶段增强：**布尔表达式计算、通用 label 跳转与控制结构 AST 表达**
+
+---
+
+### **第三阶段：完整解析器设计**
+
+基于语法树或 SLR(1) 进行统一表达式与语句块分析：
+
+* 引入 AST 节点定义（表达式 / 语句等）
+* 使用递归下降或自定义语法分析器构建 AST
+* 使用 visitor 模式或 `GenerateCode()` 方法生成 TAC
+
+---
+
+## 📌 建议依次完成内容（阶段一）
+
+1. ✅ `S → d = E`：实现变量赋值与任意右值表达式解析
+2. ✅ `S → return E`：基于 `E` 的值生成 `RETURN t`
+3. ✅ `S → d(Ř)`：支持传参（倒序 PAR）+ CALL
+4. ✅ `S → d[Ě] = E`：解析数组下标表达式，生成下标地址与赋值代码
+
+如果你同意，我将从第一个开始：**实现表达式解析并支持变量赋值语句生成三地址代码 `d = E`**。
+
+是否继续？是否允许我拆分出 `expr.go` 模块用于表达式解析？
+
+子文件夹：./expr
+文件：./expr/expr.go
+内容：
+package expr
+
+import (
+	"fmt"
+)
+
+var tempCounter = 0
+
+func newTemp() string {
+	tempCounter++
+	return fmt.Sprintf("t%d", tempCounter)
+}
+
+// 仅支持形如 d = a + b * c - d 的表达式
+func GenerateAssignExpr(tokens []string) []string {
+	code := []string{}
+	target := tokens[0]
+	exprTokens := tokens[2 : len(tokens)-1] // 去除 `d = ... ;`
+	fmt.Println("[DEBUG] tokens:", tokens)
+	fmt.Println("[DEBUG] target:", target)
+	fmt.Println("[DEBUG] exprTokens:", exprTokens)
+
+	// 简单支持：左结合、无括号、+ - * /
+	// e.g. a + b * c - d
+	var stack []string
+	for i := 0; i < len(exprTokens); i++ {
+		tok := exprTokens[i]
+
+		if tok == "+" || tok == "-" || tok == "*" || tok == "/" {
+			if len(stack) < 1 || i+1 >= len(exprTokens) {
+				panic("Invalid expression")
+			}
+			left := stack[len(stack)-1]
+			right := exprTokens[i+1]
+			i++
+
+			t := newTemp()
+			code = append(code, fmt.Sprintf("%s = %s %s %s", t, left, tok, right))
+			stack[len(stack)-1] = t // 替换为新结果
+		} else {
+			stack = append(stack, tok)
+		}
+	}
+
+	// 最终赋值
+	code = append(code, fmt.Sprintf("%s = %s", target, stack[0]))
+	return code
+}
+
+子文件夹：./generator
+文件：./generator/tac.go
+内容：
+// generator/tac.go
+package generator
+
+import "fmt"
+
+var tempCounter = 0
+var labelCounter = 0
+
+func newTemp() string {
+	tempCounter++
+	return fmt.Sprintf("t%d", tempCounter)
+}
+
+func newLabel() string {
+	labelCounter++
+	return fmt.Sprintf("L%d", labelCounter)
+}
+
+func GenerateExampleArrayAssignment() []string {
+	code := []string{}
+	t1 := newTemp()
+	code = append(code, fmt.Sprintf("%s = i + 1", t1))
+	t2 := newTemp()
+	code = append(code, fmt.Sprintf("%s = j * 2", t2))
+	t3 := newTemp()
+	code = append(code, fmt.Sprintf("%s = 4", t3))
+	t4 := newTemp()
+	code = append(code, fmt.Sprintf("%s = %s * 5", t4, t1))
+	t5 := newTemp()
+	code = append(code, fmt.Sprintf("%s = %s + %s", t5, t4, t2))
+	t6 := newTemp()
+	code = append(code, fmt.Sprintf("%s = %s * 20", t6, t5))
+	t7 := newTemp()
+	code = append(code, fmt.Sprintf("%s = %s + %s", t7, t6, t3))
+	t8 := newTemp()
+	code = append(code, fmt.Sprintf("%s = %s * 4", t8, t7))
+	t9 := newTemp()
+	code = append(code, fmt.Sprintf("%s = 66", t9))
+	code = append(code, fmt.Sprintf("a[%s] = %s", t8, t9))
+	return code
+}
+
+func GenerateIfStatement() []string {
+	code := []string{}
+	t1 := newTemp()
+	code = append(code, fmt.Sprintf("%s = 1", t1))
+	l1 := newLabel()
+	l2 := newLabel()
+	code = append(code, fmt.Sprintf("IF x < %s THEN %s ELSE %s", t1, l1, l2))
+	code = append(code, fmt.Sprintf("LABEL %s", l1))
+	code = append(code, "y = 1")
+	code = append(code, fmt.Sprintf("GOTO %s", newLabel()))
+	code = append(code, fmt.Sprintf("LABEL %s", l2))
+	code = append(code, "y = k")
+	return code
+}
+
+func GenerateWhileStatement() []string {
+	code := []string{}
+	entry := newLabel()
+	trueLabel := newLabel()
+	falseLabel := newLabel()
+	code = append(code, fmt.Sprintf("LABEL %s", entry))
+	code = append(code, fmt.Sprintf("IF z != 0 THEN %s ELSE %s", trueLabel, falseLabel))
+	code = append(code, fmt.Sprintf("LABEL %s", trueLabel))
+	code = append(code, "x = 1")
+	code = append(code, "y = b")
+	code = append(code, fmt.Sprintf("GOTO %s", entry))
+	code = append(code, fmt.Sprintf("LABEL %s", falseLabel))
+	return code
+}
+
+文件：./go.mod
+内容：
+module project
+
+go 1.23.2
+
+文件：./input.txt
+内容：
+return a + b * c;
+
+子文件夹：./lexer
+文件：./lexer/lexer.go
+内容：
+// lexer/lexer.go
+package lexer
+
+import (
+	"strings"
+	"unicode"
+)
+
+func Tokenize(input string) []string {
+	var tokens []string
+	current := ""
+	for _, r := range input {
+		if unicode.IsSpace(r) {
+			if current != "" {
+				tokens = append(tokens, current)
+				current = ""
+			}
+		} else if strings.ContainsRune("[],;+*-=/()", r) {
+			if current != "" {
+				tokens = append(tokens, current)
+				current = ""
+			}
+			tokens = append(tokens, string(r))
+		} else {
+			current += string(r)
+		}
+	}
+	if current != "" {
+		tokens = append(tokens, current)
+	}
+	return tokens
+}
+文件：./main.go
+内容：
+// main.go
+package main
+
+import (
+	"fmt"
+	"os"
+	"project/lexer"
+	"project/parser"
+)
+
+func main() {
+	input, err := os.ReadFile("input.txt")
+	if err != nil {
+		panic(err)
+	}
+
+	tokens := lexer.Tokenize(string(input))
+	tac := parser.ParseAndGenerateTAC(tokens)
+
+	for _, line := range tac {
+		fmt.Println(line)
+	}
+}
+
+文件：./output.txt
+内容：
+
+子文件夹：./parser
+文件：./parser/parser.go
+内容：
+// parser/parser.go
+package parser
+
+import (
+	"project/expr"
+	"project/generator"
+	"project/stmt" // 新增
+)
+
+func ParseAndGenerateTAC(tokens []string) []string {
+	if len(tokens) > 0 && tokens[0] == "if" {
+		return generator.GenerateIfStatement()
+	} else if len(tokens) > 0 && tokens[0] == "while" {
+		return generator.GenerateWhileStatement()
+	} else if len(tokens) > 0 && tokens[0] == "return" {
+		return stmt.GenerateReturn(tokens)
+	} else if len(tokens) >= 3 && tokens[1] == "=" {
+		return expr.GenerateAssignExpr(tokens)
+	} else {
+		return generator.GenerateExampleArrayAssignment()
+	}
+}
+
+
+
+子文件夹：./stmt
+文件：./stmt/return.go
+内容：
+package stmt
+
+import (
+	"fmt"
+	"project/expr"
+)
+
+func GenerateReturn(tokens []string) []string {
+	// 原始 tokens: ["return", "a", "+", "b", "*", "c", ";"]
+	exprTokens := tokens[1 : len(tokens)-1] // 截取表达式部分
+	if len(exprTokens) == 0 {
+		panic("Empty return expression")
+	}
+
+	// 构造假的赋值：__return__ = expr
+	fakeAssign := append([]string{"__return__", "="}, exprTokens...)
+	fmt.Println("[DEBUG] fakeAssign:", fakeAssign) // ✅ debug 输出确认
+	code := expr.GenerateAssignExpr(fakeAssign)
+
+	// 取出最后一行获取 return 的临时变量名
+	last := code[len(code)-1]
+	retVar := last[len("__return__ = "):]
+	code = code[:len(code)-1]
+	code = append(code, fmt.Sprintf("RETURN %s", retVar))
+	return code
+}
+
