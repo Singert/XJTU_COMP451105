@@ -1,2 +1,14 @@
-网安*
+# Ignore all .dot directories in any lab folder
+**/*lab*/.dot/
+*/.dot/
+.dot/
 
+# Common files to ignore
+.DS_Store
+.vscode/
+.idea/
+*.o
+*.out
+*.exe
+*.log
+*.tmp
