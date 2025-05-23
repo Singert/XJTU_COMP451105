@@ -2,25 +2,9 @@ package dfa
 
 import (
 	"fmt"
+	"lab2/core/utils"
 	"os"
 )
-
-type DFA struct {
-	Alphabet     []string                     `json:"alphabet"`
-	States       []string                     `json:"states"`
-	StartState   string                       `json:"start_state"`
-	AcceptStates []string                     `json:"accept_states"`
-	Transitions  map[string]map[string]string `json:"transitions"`
-
-	//运行时变量
-	acceptMap map[string]bool
-}
-
-type TransitionTrace struct {
-	From   string
-	Symbol string
-	To     string
-}
 
 func (d *DFA) buildAcceptMap() {
 	d.acceptMap = make(map[string]bool)
@@ -30,51 +14,54 @@ func (d *DFA) buildAcceptMap() {
 }
 
 func (d *DFA) ExportDFAtoDot(filename string) error {
-    file, err := os.Create(filename)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
-    fmt.Fprintln(file, "digraph DFA {")
-    fmt.Fprintln(file, "  rankdir=LR;")
+	fmt.Fprintln(file, "digraph DFA {")
+	fmt.Fprintln(file, "  rankdir=LR;")
 
-    // 初始状态箭头（空节点到起始状态）
-    fmt.Fprintf(file, `  "" -> %s;`+"\n", d.StartState)
+	// 初始状态箭头（空节点到起始状态）
+	fmt.Fprintf(file, `  "" -> %s;`+"\n", d.StartState)
 
-    // 输出所有状态节点
-    for _, s := range d.States {
-        shape := "circle"
-        if d.acceptMap[s] {
-            shape = "doublecircle"
-        }
-        fmt.Fprintf(file, `  %s [shape=%s];`+"\n", s, shape)
-    }
+	// 输出所有状态节点
+	for _, s := range d.States {
+		shape := "circle"
+		if d.acceptMap[s] {
+			shape = "doublecircle"
+		}
+		fmt.Fprintf(file, `  %s [shape=%s];`+"\n", s, shape)
+	}
 
-    // 输出转移边
-    for from, transitions := range d.Transitions {
-        for symbol, to := range transitions {
-            fmt.Fprintf(file, `  %s -> %s [label="%s"];`+"\n", from, to, symbol)
-        }
-    }
+	// 输出转移边
+	for from, transitions := range d.Transitions {
+		for symbol, to := range transitions {
+			fmt.Fprintf(file, `  %s -> %s [label="%s"];`+"\n", from, to, symbol)
+		}
+	}
 
-    fmt.Fprintln(file, "}")
-    return nil
+	fmt.Fprintln(file, "}")
+	return nil
 }
 
-
-func (d *DFA) MatchDFA(input string) (bool, []TransitionTrace) {
+func (d *DFA) MatchDFA(input string, verbose bool) (bool, []TransitionTrace) {
 	currentState := d.StartState
 	trace := []TransitionTrace{}
 	for i, ch := range input {
 		symbol := string(ch)
-		if !contains(d.Alphabet, symbol) {
-			fmt.Printf("Step %d: %s --%s--> ❌invalid symbol\n", i+1, currentState, symbol)
+		if !utils.Contains(d.Alphabet, symbol) {
+			if verbose {
+				fmt.Printf("Step %d: %s --%s--> ❌invalid symbol\n", i+1, currentState, symbol)
+			}
 			return false, nil
 		}
 		nextState, ok := d.Transitions[currentState][symbol]
 		if !ok {
-			fmt.Printf("Step %d: %s --%s--> ❌invalid transition\n", i+1, currentState, symbol)
+			if verbose {
+				fmt.Printf("Step %d: %s --%s--> ❌invalid transition\n", i+1, currentState, symbol)
+			}
 			return false, nil
 		}
 
@@ -84,7 +71,9 @@ func (d *DFA) MatchDFA(input string) (bool, []TransitionTrace) {
 			To:     nextState,
 		})
 
-		fmt.Printf("Step %d: %s --%s--> %s\n", i+1, currentState, symbol, nextState)
+		if verbose {
+			fmt.Printf("Step %d: %s --%s--> %s\n", i+1, currentState, symbol, nextState)
+		}
 		currentState = nextState
 	}
 	return d.acceptMap[currentState], trace
@@ -153,7 +142,7 @@ func (d *DFA) CheckValidity() bool {
 
 	// 2️⃣ check start_state in states
 	fmt.Print("checking start_state in states: ")
-	if !contains(d.States, d.StartState) {
+	if !utils.Contains(d.States, d.StartState) {
 		fmt.Printf("❌ Start state %s not in states\n", d.StartState)
 		fmt.Println("[DFA Invalid]")
 		return false
@@ -174,7 +163,7 @@ func (d *DFA) CheckValidity() bool {
 	// 4️⃣ check accept_states in states
 	fmt.Print("checking accept_states in states: ")
 	for _, s := range d.AcceptStates {
-		if !contains(d.States, s) {
+		if !utils.Contains(d.States, s) {
 			fmt.Printf("❌ Accept state %s not in states\n", s)
 			fmt.Println("[DFA Invalid]")
 			return false
@@ -195,18 +184,18 @@ func (d *DFA) CheckValidity() bool {
 	// 6️⃣ check all transitions refer to valid states and symbols
 	fmt.Print("checking transitions for valid states and symbols: ")
 	for from, trans := range d.Transitions {
-		if !contains(d.States, from) {
+		if !utils.Contains(d.States, from) {
 			fmt.Printf("❌ Transition state %s not in states\n", from)
 			fmt.Println("[DFA Invalid]")
 			return false
 		}
 		for symbol, to := range trans {
-			if !contains(d.Alphabet, symbol) {
+			if !utils.Contains(d.Alphabet, symbol) {
 				fmt.Printf("❌ Transition symbol %s not in alphabet\n", symbol)
 				fmt.Println("[DFA Invalid]")
 				return false
 			}
-			if !contains(d.States, to) {
+			if !utils.Contains(d.States, to) {
 				fmt.Printf("❌ Transition destination %s not in states\n", to)
 				fmt.Println("[DFA Invalid]")
 				return false
@@ -214,12 +203,18 @@ func (d *DFA) CheckValidity() bool {
 		}
 	}
 	fmt.Println("PASS")
-
+	for _, s := range d.States {
+		for _, sym := range d.Alphabet {
+			if _, ok := d.Transitions[s][sym]; !ok {
+				fmt.Printf("[CheckValidity] Warning: State '%s' missing transition on symbol '%s'\n", s, sym)
+			}
+		}
+	}
 	fmt.Println("[DFA Valid]")
 	return true
 }
 
-func (d *DFA) ExportToDot(filename string, trace []TransitionTrace) error{
+func (d *DFA) ExportToDot(filename string, trace []TransitionTrace) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -259,16 +254,6 @@ func (d *DFA) ExportToDot(filename string, trace []TransitionTrace) error{
 	}
 	fmt.Fprintf(file, "}")
 	return nil
-}
-
-// util function to check if a string exists in a slice
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 
 /*

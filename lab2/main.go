@@ -1,72 +1,121 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"lab2/dfa"
-	_"os/exec"
-	"strconv"
+	"lab2/core"
+	"lab2/core/dfa"
+	"os"
+	_ "os/exec"
+	"strings"
 )
 
 func main() {
 	// define command line arguments
-	enableEnum := flag.Bool("e", false, "Enable enumeration of valid strings")
 	dotPath := flag.String("d", "./dot", "Path to save dot file")
 	flag.StringVar(dotPath, "dot", "./dot", "Path to save dot file")
-	flag.BoolVar(enableEnum, "enum", false, "Enable enumeration of valid strings")
 	flag.Parse()
-	maxLength := 3
 
-	args := flag.Args()
-	if len(args) > 0 {
-		var err error
-		maxLength, err = strconv.Atoi(args[0])
-		if err != nil {
-			fmt.Println("Invalid max length argument. Using default value of 3.")
-		}
-	}
-
-	dfa, err := dfa.LoadDFAFromJson("./json/flo.json")
+	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("./json/all_dfa.json", *dotPath)
 	if err != nil {
 		fmt.Println("Error loading DFA:", err)
-		return
+		os.Exit(1)
 	}
 
-	if *enableEnum {
-		validStrings := dfa.EnumValidStrings(maxLength)
-		fmt.Printf("[Enum] Valid strings of length <= %d:\n", maxLength)
-		for _, str := range validStrings {
-			fmt.Println(str)
-		}
-		fmt.Println("[Enum] Done")
+	scanner := core.NewScanner()
+	for i := range *dfaWithTokenType {
+		scanner.RegisterDFA((*dfaWithTokenType)[i].DFA, (*dfaWithTokenType)[i].TokenType)
 	}
+
+	var reader = bufio.NewReader(os.Stdin)
 
 	for {
-		var (
-			input   string
-			dotName string
-		)
-		fmt.Print("Enter a string to match (or 'quit' to quit): ")
-		fmt.Scanln(&input)
 
-		if input == "quit" {
+		fmt.Print("Enter a string to match (or 'quit' to quit): ")
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			continue
+		}
+		line = strings.TrimSpace(line)
+
+		if line == "quit" {
 			break
 		}
-		Matched, trace := dfa.MatchDFA(input)
-		if Matched {
-			fmt.Println("✅ Accepted")
-			dotName = *dotPath+"/"+input + ".dot"
-			dfa.ExportToDot(dotName, trace)
-			// 将生成的dot文件转为png
-			// cmd := exec.Command("dot", "-Tpng", dotName, "-o", *dotPath+"/"+input+".png")
-			// err := cmd.Run()
-			// if err != nil {
-			// 	fmt.Printf("Failed to convert dot to png: %v\n", err)
-			// } else {
-			// 	fmt.Printf("PNG file generated at %s/%s.png\n", *dotPath, input)
-			// }
-		} else {
-			fmt.Println("❌ Not Accepted")
+		// Matched, trace := dfa.MatchDFA(input)
+		// if Matched {
+		// 	fmt.Println("✅ Accepted")
+		// 	dotName = *dotPath + "/" + input + ".dot"
+		// 	dfa.ExportToDot(dotName, trace)
+
+		// } else {
+		// 	fmt.Println("❌ Not Accepted")
+		// }
+
+		// pos := 0
+		// for pos < len(input) {
+		// 	token, length := scanner.Scan(input[pos:])
+		// 	if token.Type == dfa.TokenWithespace {
+		// 		pos += length
+		// 		fmt.Printf("[main:when token with space]Skip %d whitespace\n", length)
+		// 		continue
+		// 	}
+		// 	if token.Type == dfa.TokenERROR {
+		// 		fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
+		// 		pos += length
+		// 		continue
+		// 	}
+
+		// 	fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
+		// 	// 可选：导出匹配的 dot 文件，示例用第一个 DFA (你可扩展对应匹配 DFA)
+		// 	_, trace := scanner.DFAList[0].DFA.MatchDFA(token.Lexeme,false)
+		// 	dotName := fmt.Sprintf("%s/%s_%d.dot", *dotPath, token.Lexeme, pos)
+		// 	err := scanner.DFAList[0].DFA.ExportToDot(dotName, trace)
+		// 	if err != nil {
+		// 		fmt.Println("Export dot failed:", err)
+		// 	}
+
+		// 	pos += length
+		// }
+		pos := 0
+		inputRunes := []rune(line)
+		length := len(inputRunes)
+
+		for pos < length {
+			fmt.Printf("[DEBUG] pos=%d, next char='%c'\n", pos, inputRunes[pos])
+
+			subInput := string(inputRunes[pos:])
+			token, tokenLen := scanner.Scan(subInput)
+			fmt.Printf("[DEBUG] token='%s', length=%d\n", token.Lexeme, tokenLen)
+
+			if tokenLen == 0 {
+				pos++ // 防止死循环
+				continue
+			}
+
+			if token.Type == dfa.TokenWithespace {
+				pos += tokenLen
+				fmt.Printf("[main] Skip %d whitespace characters\n", tokenLen)
+				continue
+			}
+
+			if token.Type == dfa.TokenERROR {
+				fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
+				pos += tokenLen
+				continue
+			}
+
+			fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
+			_, trace := scanner.DFAList[0].DFA.MatchDFA(token.Lexeme, false)
+			dotName := fmt.Sprintf("%s/%s_%d.dot", *dotPath, token.Lexeme, pos)
+			err := scanner.DFAList[0].DFA.ExportToDot(dotName, trace)
+			if err != nil {
+				fmt.Println("Export dot failed:", err)
+			}
+
+			pos += tokenLen
 		}
+
 	}
 }
