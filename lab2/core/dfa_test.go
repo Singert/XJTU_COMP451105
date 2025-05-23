@@ -8,7 +8,7 @@ import (
 )
 
 func TestDFA(t *testing.T) {
-	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("../json/all_dfa.json", "./dot/test")
+	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("../json/all_dfa.json", "./dot/test", true)
 	if err != nil {
 		fmt.Println("Error loading DFA:", err)
 		os.Exit(1)
@@ -20,7 +20,7 @@ func TestDFA(t *testing.T) {
 
 		// 测试单字符匹配
 		for _, symbol := range entry.DFA.Alphabet {
-			ok, _ := entry.DFA.MatchDFA(symbol,true)
+			ok, _ := entry.DFA.MatchDFA(symbol, true)
 			fmt.Printf("Single symbol '%s': matched=%v\n", symbol, ok)
 		}
 
@@ -40,7 +40,7 @@ func TestDFA(t *testing.T) {
 		}
 
 		for _, w := range testWords {
-			ok, trace := entry.DFA.MatchDFA(w,true)
+			ok, trace := entry.DFA.MatchDFA(w, true)
 			fmt.Printf("Word '%s': matched=%v\n", w, ok)
 			for _, step := range trace {
 				fmt.Printf("  %s --%s--> %s\n", step.From, step.Symbol, step.To)

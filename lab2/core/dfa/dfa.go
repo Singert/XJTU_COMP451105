@@ -127,86 +127,120 @@ func (d *DFA) EnumValidStrings(maxLength int) []string {
 	return validStrings
 }
 
-func (d *DFA) CheckValidity() bool {
-	fmt.Printf("[Checking DFA Validity]\n")
+func (d *DFA) CheckValidity(verbose bool, tokenType TokenType) bool {
+	fmt.Printf("[Checking DFA Validity]: <%s>\n", tokenType)
 
 	// 1️⃣ check start_state not nil
-	fmt.Printf("checking start_state not nil: ")
+	if verbose {
+		fmt.Print("checking start_state not nil: ")
+	}
 	if d.StartState == "" {
-		fmt.Print("❌ Start state is nil\n")
+		if verbose {
+			fmt.Print("❌ Start state is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 2️⃣ check start_state in states
-	fmt.Print("checking start_state in states: ")
+	if verbose {
+		fmt.Print("checking start_state in states: ")
+	}
 	if !utils.Contains(d.States, d.StartState) {
-		fmt.Printf("❌ Start state %s not in states\n", d.StartState)
+		if verbose {
+			fmt.Printf("❌ Start state %s not in states\n", d.StartState)
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 3️⃣ check accept_states not nil
-	fmt.Print("checking accept_states not nil: ")
+	if verbose {
+		fmt.Print("checking accept_states not nil: ")
+	}
 	if len(d.AcceptStates) == 0 {
-		fmt.Print("❌ Accept states is nil\n")
+		if verbose {
+			fmt.Print("❌ Accept states is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 4️⃣ check accept_states in states
-	fmt.Print("checking accept_states in states: ")
+	if verbose {
+		fmt.Print("checking accept_states in states: ")
+	}
 	for _, s := range d.AcceptStates {
 		if !utils.Contains(d.States, s) {
-			fmt.Printf("❌ Accept state %s not in states\n", s)
+			if verbose {
+				fmt.Printf("❌ Accept state %s not in states\n", s)
+			}
 			fmt.Println("[DFA Invalid]")
 			return false
 		}
 	}
-	fmt.Println("PASS")
+	if verbose {
+		fmt.Println("PASS")
+	}
 
 	// 5️⃣ check transitions not nil
-	fmt.Print("checking transitions not nil: ")
+	if verbose {
+		fmt.Print("checking transitions not nil: ")
+	}
 	if len(d.Transitions) == 0 {
-		fmt.Print("❌ Transitions is nil\n")
+		if verbose {
+			fmt.Print("❌ Transitions is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 6️⃣ check all transitions refer to valid states and symbols
-	fmt.Print("checking transitions for valid states and symbols: ")
+	if verbose {
+		fmt.Print("checking transitions for valid states and symbols: ")
+	}
 	for from, trans := range d.Transitions {
 		if !utils.Contains(d.States, from) {
-			fmt.Printf("❌ Transition state %s not in states\n", from)
+			if verbose {
+				fmt.Printf("❌ Transition state %s not in states\n", from)
+			}
 			fmt.Println("[DFA Invalid]")
 			return false
 		}
 		for symbol, to := range trans {
 			if !utils.Contains(d.Alphabet, symbol) {
-				fmt.Printf("❌ Transition symbol %s not in alphabet\n", symbol)
+				if verbose {
+					fmt.Printf("❌ Transition symbol %s not in alphabet\n", symbol)
+				}
 				fmt.Println("[DFA Invalid]")
 				return false
 			}
 			if !utils.Contains(d.States, to) {
-				fmt.Printf("❌ Transition destination %s not in states\n", to)
+				if verbose {
+					fmt.Printf("❌ Transition destination %s not in states\n", to)
+				}
 				fmt.Println("[DFA Invalid]")
 				return false
 			}
 		}
 	}
-	fmt.Println("PASS")
+	if verbose {
+		fmt.Println("PASS")
+	}
 	for _, s := range d.States {
 		for _, sym := range d.Alphabet {
 			if _, ok := d.Transitions[s][sym]; !ok {
-				fmt.Printf("[CheckValidity] Warning: State '%s' missing transition on symbol '%s'\n", s, sym)
+				if verbose {
+					fmt.Printf("[CheckValidity] Warning: State '%s' missing transition on symbol '%s'\n", s, sym)
+				}
 			}
 		}
 	}

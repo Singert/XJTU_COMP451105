@@ -131,86 +131,120 @@ func (d *DFA) EnumValidStrings(maxLength int) []string {
 	return validStrings
 }
 
-func (d *DFA) CheckValidity() bool {
-	fmt.Printf("[Checking DFA Validity]\n")
+func (d *DFA) CheckValidity(verbose bool, tokenType TokenType) bool {
+	fmt.Printf("[Checking DFA Validity]: <%s>\n", tokenType)
 
 	// 1️⃣ check start_state not nil
-	fmt.Printf("checking start_state not nil: ")
+	if verbose {
+		fmt.Print("checking start_state not nil: ")
+	}
 	if d.StartState == "" {
-		fmt.Print("❌ Start state is nil\n")
+		if verbose {
+			fmt.Print("❌ Start state is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 2️⃣ check start_state in states
-	fmt.Print("checking start_state in states: ")
+	if verbose {
+		fmt.Print("checking start_state in states: ")
+	}
 	if !utils.Contains(d.States, d.StartState) {
-		fmt.Printf("❌ Start state %s not in states\n", d.StartState)
+		if verbose {
+			fmt.Printf("❌ Start state %s not in states\n", d.StartState)
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 3️⃣ check accept_states not nil
-	fmt.Print("checking accept_states not nil: ")
+	if verbose {
+		fmt.Print("checking accept_states not nil: ")
+	}
 	if len(d.AcceptStates) == 0 {
-		fmt.Print("❌ Accept states is nil\n")
+		if verbose {
+			fmt.Print("❌ Accept states is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 4️⃣ check accept_states in states
-	fmt.Print("checking accept_states in states: ")
+	if verbose {
+		fmt.Print("checking accept_states in states: ")
+	}
 	for _, s := range d.AcceptStates {
 		if !utils.Contains(d.States, s) {
-			fmt.Printf("❌ Accept state %s not in states\n", s)
+			if verbose {
+				fmt.Printf("❌ Accept state %s not in states\n", s)
+			}
 			fmt.Println("[DFA Invalid]")
 			return false
 		}
 	}
-	fmt.Println("PASS")
+	if verbose {
+		fmt.Println("PASS")
+	}
 
 	// 5️⃣ check transitions not nil
-	fmt.Print("checking transitions not nil: ")
+	if verbose {
+		fmt.Print("checking transitions not nil: ")
+	}
 	if len(d.Transitions) == 0 {
-		fmt.Print("❌ Transitions is nil\n")
+		if verbose {
+			fmt.Print("❌ Transitions is nil\n")
+		}
 		fmt.Println("[DFA Invalid]")
 		return false
-	} else {
+	} else if verbose {
 		fmt.Println("PASS")
 	}
 
 	// 6️⃣ check all transitions refer to valid states and symbols
-	fmt.Print("checking transitions for valid states and symbols: ")
+	if verbose {
+		fmt.Print("checking transitions for valid states and symbols: ")
+	}
 	for from, trans := range d.Transitions {
 		if !utils.Contains(d.States, from) {
-			fmt.Printf("❌ Transition state %s not in states\n", from)
+			if verbose {
+				fmt.Printf("❌ Transition state %s not in states\n", from)
+			}
 			fmt.Println("[DFA Invalid]")
 			return false
 		}
 		for symbol, to := range trans {
 			if !utils.Contains(d.Alphabet, symbol) {
-				fmt.Printf("❌ Transition symbol %s not in alphabet\n", symbol)
+				if verbose {
+					fmt.Printf("❌ Transition symbol %s not in alphabet\n", symbol)
+				}
 				fmt.Println("[DFA Invalid]")
 				return false
 			}
 			if !utils.Contains(d.States, to) {
-				fmt.Printf("❌ Transition destination %s not in states\n", to)
+				if verbose {
+					fmt.Printf("❌ Transition destination %s not in states\n", to)
+				}
 				fmt.Println("[DFA Invalid]")
 				return false
 			}
 		}
 	}
-	fmt.Println("PASS")
+	if verbose {
+		fmt.Println("PASS")
+	}
 	for _, s := range d.States {
 		for _, sym := range d.Alphabet {
 			if _, ok := d.Transitions[s][sym]; !ok {
-				fmt.Printf("[CheckValidity] Warning: State '%s' missing transition on symbol '%s'\n", s, sym)
+				if verbose {
+					fmt.Printf("[CheckValidity] Warning: State '%s' missing transition on symbol '%s'\n", s, sym)
+				}
 			}
 		}
 	}
@@ -325,7 +359,7 @@ import (
 	"os"
 )
 
-func LoadDFAFromJson(fileName string) (*DFA, error) {
+func LoadDFAFromJson(fileName string, verbose bool) (*DFA, error) {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, err
@@ -335,13 +369,13 @@ func LoadDFAFromJson(fileName string) (*DFA, error) {
 	if err != nil {
 		return nil, err
 	}
-	dfa.CheckValidity()
+	dfa.CheckValidity(verbose, "")
 	dfa.buildAcceptMap()
 	dfa.ExportDFAtoDot("./dot/dfa.dot")
 	return &dfa, nil
 }
 
-func LoadMultiDFAFromJson(fileName string, dotPath string) (*[]DFAWithTokenType, error) {
+func LoadMultiDFAFromJson(fileName string, dotPath string, verbose bool) (*[]DFAWithTokenType, error) {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, err
@@ -352,8 +386,10 @@ func LoadMultiDFAFromJson(fileName string, dotPath string) (*[]DFAWithTokenType,
 		return nil, err
 	}
 	for i := range dfas {
-		fmt.Printf("Loaded DFA from %s, q0 transitions: %+v\n", fileName, dfas[i].DFA.Transitions["q0"])
-		dfas[i].DFA.CheckValidity()
+		if verbose {
+			fmt.Printf("Loaded DFA from %s, q0 transitions: %+v\n", fileName, dfas[i].DFA.Transitions["q0"])
+		}
+		dfas[i].DFA.CheckValidity(verbose, dfas[i].TokenType)
 		dfas[i].DFA.buildAcceptMap()
 		dotPath := dotPath + "/" + string(dfas[i].TokenType) + ".dot"
 		dfas[i].DFA.ExportDFAtoDot(dotPath)
@@ -373,7 +409,7 @@ import (
 )
 
 func TestDFA(t *testing.T) {
-	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("../json/all_dfa.json", "./dot/test")
+	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("../json/all_dfa.json", "./dot/test", true)
 	if err != nil {
 		fmt.Println("Error loading DFA:", err)
 		os.Exit(1)
@@ -385,7 +421,7 @@ func TestDFA(t *testing.T) {
 
 		// 测试单字符匹配
 		for _, symbol := range entry.DFA.Alphabet {
-			ok, _ := entry.DFA.MatchDFA(symbol,true)
+			ok, _ := entry.DFA.MatchDFA(symbol, true)
 			fmt.Printf("Single symbol '%s': matched=%v\n", symbol, ok)
 		}
 
@@ -405,7 +441,7 @@ func TestDFA(t *testing.T) {
 		}
 
 		for _, w := range testWords {
-			ok, trace := entry.DFA.MatchDFA(w,true)
+			ok, trace := entry.DFA.MatchDFA(w, true)
 			fmt.Printf("Word '%s': matched=%v\n", w, ok)
 			for _, step := range trace {
 				fmt.Printf("  %s --%s--> %s\n", step.From, step.Symbol, step.To)
@@ -414,21 +450,17 @@ func TestDFA(t *testing.T) {
 	}
 }
 
-文件：./core/scanner.go
+子文件夹：./core/scanner
+文件：./core/scanner/scanner.go
 内容：
-package core
+package scanner
 
 import (
+	"fmt"
 	"lab2/core/dfa"
+	"os"
 	"unicode"
 )
-
-type Scanner struct {
-	DFAList []struct {
-		DFA       *dfa.DFA
-		TokenType dfa.TokenType
-	}
-}
 
 func NewScanner() *Scanner {
 	return &Scanner{}
@@ -478,44 +510,178 @@ func (s *Scanner) Scan(input string) (matched dfa.Token, length int) {
 	if maxLen == 0 {
 		return dfa.Token{Type: dfa.TokenERROR, Lexeme: string(runes[0])}, 1
 	}
+
+	if maxToken.Type == dfa.TokenID {
+		if keywordType, ok := keywords[maxToken.Lexeme]; ok {
+			maxToken.Type = keywordType
+		}
+	}
+
 	_, _ = maxDFA.MatchDFA(maxToken.Lexeme, true)
 	return maxToken, maxLen
 }
 
-// func (s *Scanner) Scan(input string) (matched dfa.Token, length int) {
-// 	fmt.Printf("[Scan] input segment: '%s'\n", input)
+func ScanAndOutput(scanner *Scanner, input string, dotPath string, out *os.File) {
+	pos := 0
+	inputRunes := []rune(input)
+	length := len(inputRunes)
 
-// 	maxLen := 0
-// 	var maxToken dfa.Token
+	for pos < length {
+		fmt.Printf("[DEBUG] pos=%d, next char='%c'\n", pos, inputRunes[pos])
 
-// 	// 从输入的第一个字符开始尝试匹配
-// 	for _, entry := range s.DFAList {
-// 		// 这里我们尝试从字符长度为 1 到最大长度进行匹配
-// 		for i := 1; i <= len(input); i++ {
-// 			sub := input[:i] // 获取从开头到第i个字符的子字符串
-// 			ok, _ := entry.DFA.MatchDFA(sub)
-// 			fmt.Printf("[Scan] trying DFA token %s on input '%s'\n", entry.TokenType, sub)
+		subInput := string(inputRunes[pos:])
+		token, tokenLen := scanner.Scan(subInput)
+		fmt.Printf("[DEBUG] token='%s', length=%d\n", token.Lexeme, tokenLen)
 
-// 			if ok {
-// 				if i > maxLen { // 如果当前匹配的长度大于之前的最大匹配长度，更新 maxToken
-// 					maxLen = i
-// 					maxToken = dfa.Token{Type: entry.TokenType, Lexeme: sub}
-// 				}
-// 			}
-// 		}
-// 	}
+		if tokenLen == 0 {
+			pos++ // 防止死循环
+			continue
+		}
 
-// 	// 如果没有匹配，检查是否为空白符或者错误字符
-// 	if maxLen == 0 {
-// 		runes := []rune(input)
-// 		if len(runes) > 0 && isWhitespace(runes[0]) {
-// 			return dfa.Token{Type: dfa.TokenWithespace, Lexeme: string(runes[0])}, 1
-// 		}
-// 		return dfa.Token{Type: dfa.TokenERROR, Lexeme: string(input[0])}, 1
-// 	}
+		if token.Type == dfa.TokenWithespace {
+			pos += tokenLen
+			fmt.Printf("[main] Skip %d whitespace characters\n", tokenLen)
+			continue
+		}
 
-// 	return maxToken, maxLen
-// }
+		if token.Type == dfa.TokenERROR {
+			fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
+			pos += tokenLen
+			continue
+		}
+
+		fmt.Fprintf(out, "[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
+		fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
+
+		_, trace := scanner.DFAList[0].DFA.MatchDFA(token.Lexeme, false)
+		dotName := fmt.Sprintf("%s/%s_%d.dot", dotPath, token.Lexeme, pos)
+		err := scanner.DFAList[0].DFA.ExportToDot(dotName, trace)
+		if err != nil {
+			fmt.Println("Export dot failed:", err)
+		}
+
+		pos += tokenLen
+	}
+}
+
+文件：./core/scanner/scanner_model.go
+内容：
+package scanner
+
+import (
+	"lab2/core/dfa"
+)
+
+var keywords = map[string]dfa.TokenType{
+	"int":      dfa.TokenKW,
+	"return":   dfa.TokenKW,
+	"if":       dfa.TokenKW,
+	"else":     dfa.TokenKW,
+	"for":      dfa.TokenKW,
+	"while":    dfa.TokenKW,
+	"break":    dfa.TokenKW,
+	"continue": dfa.TokenKW,
+	"void":     dfa.TokenKW,
+	"char":     dfa.TokenKW,
+	"float":    dfa.TokenKW,
+	"double":   dfa.TokenKW,
+	// 按需继续添加其他C语言关键字
+}
+
+type Scanner struct {
+	DFAList []struct {
+		DFA       *dfa.DFA
+		TokenType dfa.TokenType
+	}
+}
+
+文件：./core/scanner/scanner_test.go
+内容：
+package scanner_test
+
+import (
+	"lab2/core/dfa"
+	"lab2/core/scanner"
+	"testing"
+)
+
+func TestScanner(t *testing.T) {
+	// 加载所有DFA并注册
+	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("../json/all_dfa.json", "./dot/test", true)
+	if err != nil {
+		t.Fatalf("Failed to load DFA: %v", err)
+	}
+
+	scanner := scanner.NewScanner()
+	for i := range *dfaWithTokenType {
+		scanner.RegisterDFA((*dfaWithTokenType)[i].DFA, (*dfaWithTokenType)[i].TokenType)
+	}
+
+	tests := []struct {
+		input    string
+		expected []dfa.Token
+	}{
+		{
+			input: "int x = 3.15;",
+			expected: []dfa.Token{
+				{Type: dfa.TokenID, Lexeme: "int"},
+				{Type: dfa.TokenID, Lexeme: "x"},
+				{Type: dfa.TokenOP, Lexeme: "="},
+				{Type: dfa.TokenFLO, Lexeme: "3.15"},
+				{Type: dfa.TokenDELIM, Lexeme: ";"},
+			},
+		},
+		{
+			input: "var1+=42",
+			expected: []dfa.Token{
+				{Type: dfa.TokenID, Lexeme: "var1"},
+				{Type: dfa.TokenOP, Lexeme: "+="},
+				{Type: dfa.TokenNUM, Lexeme: "42"},
+			},
+		},
+		{
+			input: "\t \n  \r",
+			expected: []dfa.Token{
+				{Type: dfa.TokenWithespace, Lexeme: "\t \n  \r"},
+			},
+		},
+		{
+			input: "@unknown",
+			expected: []dfa.Token{
+				{Type: dfa.TokenERROR, Lexeme: "@"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		pos := 0
+		inputRunes := []rune(tt.input)
+		var gotTokens []dfa.Token
+
+		for pos < len(inputRunes) {
+			token, length := scanner.Scan(string(inputRunes[pos:]))
+			if length == 0 {
+				t.Fatalf("Zero length token detected, possible infinite loop for input: %s", tt.input)
+			}
+			pos += length
+			if token.Type == dfa.TokenWithespace {
+				continue // 忽略空白token
+			}
+			gotTokens = append(gotTokens, token)
+		}
+
+		if len(gotTokens) != len(tt.expected) {
+			t.Errorf("Input %q: expected %d tokens, got %d", tt.input, len(tt.expected), len(gotTokens))
+			continue
+		}
+		for i := range gotTokens {
+			if gotTokens[i].Type != tt.expected[i].Type || gotTokens[i].Lexeme != tt.expected[i].Lexeme {
+				t.Errorf("Input %q: token %d expected (%s, %q), got (%s, %q)",
+					tt.input, i, tt.expected[i].Type, tt.expected[i].Lexeme, gotTokens[i].Type, gotTokens[i].Lexeme)
+			}
+		}
+	}
+}
 
 子文件夹：./core/utils
 文件：./core/utils/utils.go
@@ -533,14 +699,318 @@ func Contains(slice []string, item string) bool {
 	return false
 }
 
-
+子文件夹：./dot
 文件：./go.mod
 内容：
 module lab2
 
 go 1.23.2
 
+子文件夹：./json
+文件：./json/all_dfa.json
+内容：
+[
+    {
+    "token_type": "ID",
+    "dfa":{
+            "alphabet": [
+              "a","b","c","d","e","f","g","h","i","j","k","l","m",
+              "n","o","p","q","r","s","t","u","v","w","x","y","z",
+              "A","B","C","D","E","F","G","H","I","J","K","L","M",
+              "N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+              "_","0","1","2","3","4","5","6","7","8","9"
+            ],
+            "states": ["q0", "q1"],
+            "start_state": "q0",
+            "accept_states": ["q1"],
+            "transitions": {
+              "q0": {
+                "a": "q1", "b": "q1", "c": "q1", "d": "q1", "e": "q1", "f": "q1", "g": "q1",
+                "h": "q1", "i": "q1", "j": "q1", "k": "q1", "l": "q1", "m": "q1", "n": "q1",
+                "o": "q1", "p": "q1", "q": "q1", "r": "q1", "s": "q1", "t": "q1", "u": "q1",
+                "v": "q1", "w": "q1", "x": "q1", "y": "q1", "z": "q1",
+                "A": "q1", "B": "q1", "C": "q1", "D": "q1", "E": "q1", "F": "q1", "G": "q1",
+                "H": "q1", "I": "q1", "J": "q1", "K": "q1", "L": "q1", "M": "q1", "N": "q1",
+                "O": "q1", "P": "q1", "Q": "q1", "R": "q1", "S": "q1", "T": "q1", "U": "q1",
+                "V": "q1", "W": "q1", "X": "q1", "Y": "q1", "Z": "q1",
+                "_": "q1"
+                    },
+              "q1": {
+                "a": "q1", "b": "q1", "c": "q1", "d": "q1", "e": "q1", "f": "q1", "g": "q1",
+                "h": "q1", "i": "q1", "j": "q1", "k": "q1", "l": "q1", "m": "q1", "n": "q1",
+                "o": "q1", "p": "q1", "q": "q1", "r": "q1", "s": "q1", "t": "q1", "u": "q1",
+                "v": "q1", "w": "q1", "x": "q1", "y": "q1", "z": "q1",
+                "A": "q1", "B": "q1", "C": "q1", "D": "q1", "E": "q1", "F": "q1", "G": "q1",
+                "H": "q1", "I": "q1", "J": "q1", "K": "q1", "L": "q1", "M": "q1", "N": "q1",
+                "O": "q1", "P": "q1", "Q": "q1", "R": "q1", "S": "q1", "T": "q1", "U": "q1",
+                "V": "q1", "W": "q1", "X": "q1", "Y": "q1", "Z": "q1",
+                "_": "q1",
+                "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+                "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+                    }
+                }
+            }
+    },
+    {
+        "token_type":"DELIM",
+        "dfa":{
+            "alphabet": ["(", ")", "{", "}", ";", ","],
+            "states": ["q0", "q1"],
+            "start_state": "q0",
+            "accept_states": ["q1"],
+            "transitions": {
+            "q0": {
+                "(": "q1", ")": "q1", "{": "q1", "}": "q1", ";": "q1", ",": "q1"
+                }
+            }
+            }
+    },
+    {
+        "token_type":"OP",
+        "dfa":{
+            "alphabet": ["+", "-", "*", "/", "=", "<", ">", "!"],
+            "states": ["q0", "q1", "q2"],
+            "start_state": "q0",
+            "accept_states": ["q1", "q2"],
+            "transitions": {
+                "q0": {
+                   "+": "q1", "-": "q1", "*": "q1", "/": "q1",
+                   "=": "q1", "<": "q1", ">": "q1", "!": "q1"
+                },
+                "q1": {
+                  "=": "q2"  
+                }
+              }
+            }
 
+    },
+    {
+        "token_type":"NUM",
+        "dfa":{
+            "alphabet": [
+                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+            ],
+            "states": ["q0", "q1"],
+            "start_state": "q0",
+            "accept_states": ["q1"],
+            "transitions": {
+                "q0": {
+                    "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+                    "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+                },
+                "q1": {
+                    "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+                    "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+                }
+            }
+        }
+    },
+    {
+        "token_type":"FLO",
+        "dfa":
+{
+  "alphabet": ["0","1","2","3","4","5","6","7","8","9",".","e","E","+","-"],
+  "states": ["q0", "q1", "q2", "q3", "q4", "q5", "q6"],
+  "start_state": "q0",
+  "accept_states": ["q1","q3", "q6"],
+  "transitions": {
+    "q0": {
+      "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+      "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1",
+      ".": "q2"
+    },
+    "q1": {
+      "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+      "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1",
+      ".": "q2",
+      "e": "q4", "E": "q4"
+    },
+    "q2": {
+      "0": "q3", "1": "q3", "2": "q3", "3": "q3", "4": "q3",
+      "5": "q3", "6": "q3", "7": "q3", "8": "q3", "9": "q3"
+    },
+    "q3": {
+      "0": "q3", "1": "q3", "2": "q3", "3": "q3", "4": "q3",
+      "5": "q3", "6": "q3", "7": "q3", "8": "q3", "9": "q3",
+      "e": "q4", "E": "q4"
+    },
+    "q4": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6",
+      "+": "q5", "-": "q5"
+    },
+    "q5": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6"
+    },
+    "q6": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6"
+    }
+  }
+}
+
+
+
+    }
+]
+文件：./json/delim.json
+内容：
+{
+  "alphabet": ["(", ")", "{", "}", ";", ","],
+  "states": ["q0", "q1"],
+  "start_state": "q0",
+  "accept_states": ["q1"],
+  "transitions": {
+    "q0": {
+      "(": "q1", ")": "q1", "{": "q1", "}": "q1", ";": "q1", ",": "q1"
+    }
+  }
+}
+
+文件：./json/flo.json
+内容：
+{
+  "alphabet": ["0","1","2","3","4","5","6","7","8","9",".","e","E","+","-"],
+  "states": ["q0", "q1", "q2", "q3", "q4", "q5", "q6"],
+  "start_state": "q0",
+  "accept_states": ["q3", "q6"],
+  "transitions": {
+    "q0": {
+      "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+      "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+    },
+    "q1": {
+      "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+      "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1",
+      ".": "q2", "e": "q4", "E": "q4"
+    },
+    "q2": {
+      "0": "q3", "1": "q3", "2": "q3", "3": "q3", "4": "q3",
+      "5": "q3", "6": "q3", "7": "q3", "8": "q3", "9": "q3"
+    },
+    "q3": {
+      "0": "q3", "1": "q3", "2": "q3", "3": "q3", "4": "q3",
+      "5": "q3", "6": "q3", "7": "q3", "8": "q3", "9": "q3",
+      "e": "q4", "E": "q4"
+    },
+    "q4": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6",
+      "+": "q5", "-": "q5"
+    },
+    "q5": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6"
+    },
+    "q6": {
+      "0": "q6", "1": "q6", "2": "q6", "3": "q6", "4": "q6",
+      "5": "q6", "6": "q6", "7": "q6", "8": "q6", "9": "q6"
+    }
+  }
+}
+
+文件：./json/id.json
+内容：
+{
+  "alphabet": [
+    "a","b","c","d","e","f","g","h","i","j","k","l","m",
+    "n","o","p","q","r","s","t","u","v","w","x","y","z",
+    "A","B","C","D","E","F","G","H","I","J","K","L","M",
+    "N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+    "_","0","1","2","3","4","5","6","7","8","9"
+  ],
+  "states": ["q0", "q1"],
+  "start_state": "q0",
+  "accept_states": ["q1"],
+  "transitions": {
+    "q0": {
+      "a": "q1", "b": "q1", "c": "q1", "d": "q1", "e": "q1", "f": "q1", "g": "q1",
+      "h": "q1", "i": "q1", "j": "q1", "k": "q1", "l": "q1", "m": "q1", "n": "q1",
+      "o": "q1", "p": "q1", "q": "q1", "r": "q1", "s": "q1", "t": "q1", "u": "q1",
+      "v": "q1", "w": "q1", "x": "q1", "y": "q1", "z": "q1",
+      "A": "q1", "B": "q1", "C": "q1", "D": "q1", "E": "q1", "F": "q1", "G": "q1",
+      "H": "q1", "I": "q1", "J": "q1", "K": "q1", "L": "q1", "M": "q1", "N": "q1",
+      "O": "q1", "P": "q1", "Q": "q1", "R": "q1", "S": "q1", "T": "q1", "U": "q1",
+      "V": "q1", "W": "q1", "X": "q1", "Y": "q1", "Z": "q1",
+      "_": "q1"
+    },
+    "q1": {
+      "a": "q1", "b": "q1", "c": "q1", "d": "q1", "e": "q1", "f": "q1", "g": "q1",
+      "h": "q1", "i": "q1", "j": "q1", "k": "q1", "l": "q1", "m": "q1", "n": "q1",
+      "o": "q1", "p": "q1", "q": "q1", "r": "q1", "s": "q1", "t": "q1", "u": "q1",
+      "v": "q1", "w": "q1", "x": "q1", "y": "q1", "z": "q1",
+      "A": "q1", "B": "q1", "C": "q1", "D": "q1", "E": "q1", "F": "q1", "G": "q1",
+      "H": "q1", "I": "q1", "J": "q1", "K": "q1", "L": "q1", "M": "q1", "N": "q1",
+      "O": "q1", "P": "q1", "Q": "q1", "R": "q1", "S": "q1", "T": "q1", "U": "q1",
+      "V": "q1", "W": "q1", "X": "q1", "Y": "q1", "Z": "q1",
+      "_": "q1",
+      "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+      "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+    }
+  }
+}
+
+文件：./json/num.json
+内容：
+{
+    "alphabet": [
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+    ],
+    "states": ["q0", "q1"],
+    "start_state": "q0",
+    "accept_states": ["q1"],
+    "transitions": {
+        "q0": {
+            "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+            "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+        },
+        "q1": {
+            "0": "q1", "1": "q1", "2": "q1", "3": "q1", "4": "q1",
+            "5": "q1", "6": "q1", "7": "q1", "8": "q1", "9": "q1"
+        }
+    }
+}
+文件：./json/op.json
+内容：
+{
+  "alphabet": ["+", "-", "*", "/", "=", "<", ">", "!"],
+  "states": ["q0", "q1", "q2"],
+  "start_state": "q0",
+  "accept_states": ["q1", "q2"],
+  "transitions": {
+    "q0": {
+      "+": "q1", "-": "q1", "*": "q1", "/": "q1",
+      "=": "q1", "<": "q1", ">": "q1", "!": "q1"
+    },
+    "q1": {
+      "=": "q2"  
+    }
+  }
+}
+
+文件：./json/test_dfa.json
+内容：
+{
+    "alphabet": [
+        "a",
+        "b"
+    ],
+    "states": [
+        "q0",
+        "q1",
+        "q2"
+    ],
+    "start_state": "q0",
+    "accept_states": [
+        "q2"
+    ],
+    "transitions": {
+        "q0": {"a": "q1","b": "q0" },
+        "q1": { "a": "q2","b": "q0"},
+        "q2": {"a": "q2","b": "q2"}
+    }
+}
 文件：./main.go
 内容：
 package main
@@ -549,8 +1019,8 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"lab2/core"
 	"lab2/core/dfa"
+	"lab2/core/scanner"
 	"os"
 	_ "os/exec"
 	"strings"
@@ -559,18 +1029,48 @@ import (
 func main() {
 	// define command line arguments
 	dotPath := flag.String("d", "./dot", "Path to save dot file")
+	verbose := flag.Bool("v", false, "Verbose output")
+	outputFile := flag.String("o", "", "Output file path for tokens (default: print to stdout)")
+	sourcefile := flag.String("s", "", "Source file path (default: read from stdin)")
+	flag.StringVar(sourcefile, "source", "", "Source file path (default: read from stdin)")
+	flag.StringVar(outputFile, "output", "", "Output file path for tokens (default: print to stdout)")
+	flag.BoolVar(verbose, "verbose", false, "Verbose output")
 	flag.StringVar(dotPath, "dot", "./dot", "Path to save dot file")
 	flag.Parse()
 
-	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("./json/all_dfa.json", *dotPath)
+	var out *os.File
+	var err error
+	if *outputFile != "" {
+		out, err = os.Create(*outputFile)
+		if err != nil {
+			fmt.Printf("Failed to create output file: %v\n", err)
+			return
+		}
+		defer out.Close()
+	} else {
+		out = os.Stdout
+	}
+
+	dfaWithTokenType, err := dfa.LoadMultiDFAFromJson("./json/all_dfa.json", *dotPath, *verbose)
 	if err != nil {
 		fmt.Println("Error loading DFA:", err)
 		os.Exit(1)
 	}
 
-	scanner := core.NewScanner()
+	newScanner := scanner.NewScanner()
 	for i := range *dfaWithTokenType {
-		scanner.RegisterDFA((*dfaWithTokenType)[i].DFA, (*dfaWithTokenType)[i].TokenType)
+		newScanner.RegisterDFA((*dfaWithTokenType)[i].DFA, (*dfaWithTokenType)[i].TokenType)
+	}
+
+	if *sourcefile != "" {
+		fmt.Printf("parse file: %s\n", *sourcefile)
+		contentBytes, err := os.ReadFile(*sourcefile)
+		if err != nil {
+			fmt.Printf("Failed to read source file: %v\n", err)
+			os.Exit(1)
+		}
+		code := string(contentBytes)
+		scanner.ScanAndOutput(newScanner, code, *dotPath, out)
 	}
 
 	var reader = bufio.NewReader(os.Stdin)
@@ -588,79 +1088,47 @@ func main() {
 		if line == "quit" {
 			break
 		}
-		// Matched, trace := dfa.MatchDFA(input)
-		// if Matched {
-		// 	fmt.Println("✅ Accepted")
-		// 	dotName = *dotPath + "/" + input + ".dot"
-		// 	dfa.ExportToDot(dotName, trace)
 
-		// } else {
-		// 	fmt.Println("❌ Not Accepted")
-		// }
-
+		fmt.Fprintf(out, "parsing input: %s\n", line)
+		scanner.ScanAndOutput(newScanner, line, *dotPath, out)
 		// pos := 0
-		// for pos < len(input) {
-		// 	token, length := scanner.Scan(input[pos:])
-		// 	if token.Type == dfa.TokenWithespace {
-		// 		pos += length
-		// 		fmt.Printf("[main:when token with space]Skip %d whitespace\n", length)
+		// inputRunes := []rune(line)
+		// length := len(inputRunes)
+
+		// for pos < length {
+		// 	fmt.Printf("[DEBUG] pos=%d, next char='%c'\n", pos, inputRunes[pos])
+
+		// 	subInput := string(inputRunes[pos:])
+		// 	token, tokenLen := newScanner.Scan(subInput)
+		// 	fmt.Printf("[DEBUG] token='%s', length=%d\n", token.Lexeme, tokenLen)
+
+		// 	if tokenLen == 0 {
+		// 		pos++ // 防止死循环
 		// 		continue
 		// 	}
+
+		// 	if token.Type == dfa.TokenWithespace {
+		// 		pos += tokenLen
+		// 		fmt.Printf("[main] Skip %d whitespace characters\n", tokenLen)
+		// 		continue
+		// 	}
+
 		// 	if token.Type == dfa.TokenERROR {
 		// 		fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
-		// 		pos += length
+		// 		pos += tokenLen
 		// 		continue
 		// 	}
-
+		// 	fmt.Fprintf(out, "[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
 		// 	fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
-		// 	// 可选：导出匹配的 dot 文件，示例用第一个 DFA (你可扩展对应匹配 DFA)
-		// 	_, trace := scanner.DFAList[0].DFA.MatchDFA(token.Lexeme,false)
+		// 	_, trace := newScanner.DFAList[0].DFA.MatchDFA(token.Lexeme, false)
 		// 	dotName := fmt.Sprintf("%s/%s_%d.dot", *dotPath, token.Lexeme, pos)
-		// 	err := scanner.DFAList[0].DFA.ExportToDot(dotName, trace)
+		// 	err := newScanner.DFAList[0].DFA.ExportToDot(dotName, trace)
 		// 	if err != nil {
 		// 		fmt.Println("Export dot failed:", err)
 		// 	}
 
-		// 	pos += length
+		// 	pos += tokenLen
 		// }
-		pos := 0
-		inputRunes := []rune(line)
-		length := len(inputRunes)
-
-		for pos < length {
-			fmt.Printf("[DEBUG] pos=%d, next char='%c'\n", pos, inputRunes[pos])
-
-			subInput := string(inputRunes[pos:])
-			token, tokenLen := scanner.Scan(subInput)
-			fmt.Printf("[DEBUG] token='%s', length=%d\n", token.Lexeme, tokenLen)
-
-			if tokenLen == 0 {
-				pos++ // 防止死循环
-				continue
-			}
-
-			if token.Type == dfa.TokenWithespace {
-				pos += tokenLen
-				fmt.Printf("[main] Skip %d whitespace characters\n", tokenLen)
-				continue
-			}
-
-			if token.Type == dfa.TokenERROR {
-				fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
-				pos += tokenLen
-				continue
-			}
-
-			fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
-			_, trace := scanner.DFAList[0].DFA.MatchDFA(token.Lexeme, false)
-			dotName := fmt.Sprintf("%s/%s_%d.dot", *dotPath, token.Lexeme, pos)
-			err := scanner.DFAList[0].DFA.ExportToDot(dotName, trace)
-			if err != nil {
-				fmt.Println("Export dot failed:", err)
-			}
-
-			pos += tokenLen
-		}
 
 	}
 }
@@ -679,4 +1147,17 @@ func main() {
 
 - [x] dot可视化DFA以及状态转移过程
 
+| 功能点                     | 状态     | 备注                                                 |
+| ----------------------- | ------ | -------------------------------------------------- |
+| 设计多个DFA定义识别各类token      | 已完成    | all\_dfa.json设计了ID, NUM, FLO, OP, DELIM多种token的DFA |
+| 加载多个DFA并进行合法性检查         | 已完成    | 加载DFA时进行合法性检查，打印缺失转移等警告                            |
+| DFA运行匹配与输出状态转移轨迹        | 已完成    | `MatchDFA`支持verbose，能打印转移步骤                        |
+| DFA的DOT文件生成和路径高亮        | 已完成    | 识别路径生成DOT文件，并高亮匹配路径                                |
+| 实现Scanner结合所有DFA做最长匹配扫描 | 已完成    | Scanner的Scan支持最长匹配，能区分空白、错误token                   |
+| Scanner能对输入字符串进行完整词法分析  | 已完成    | `main.go`实现交互输入并调用Scanner，输出token序列                |
+| 单元测试对DFA和Scanner做了基本测试  | 已完成    | 代码中包含DFA测试和Scanner测试，覆盖基本token匹配和扫描测试              |
+| 支持空白符和错误token的识别        | 已完成    | 空白符跳过，错误token报告                                    |
+| 支持复杂token（如浮点数、复合运算符）   | 已完成    | 浮点数DFA覆盖科学计数法等，运算符支持`==`, `+=`等                    |
+| 支持输出扫描结果到终端或文件          | 代码框架完成 | 目前main.go终端交互输出完整，文件重定向可通过shell实现                  |
+| flex正则式实现（选做）           | 未见相关代码 | 未提供flex正则表达式实现                                     |
 
