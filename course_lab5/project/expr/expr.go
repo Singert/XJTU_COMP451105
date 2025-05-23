@@ -5,10 +5,16 @@ import (
 )
 
 var tempCounter = 0
+var labelCounter = 0
 
 func NewTemp() string {
 	tempCounter++
 	return fmt.Sprintf("t%d", tempCounter)
+}
+
+func NewLabel() string {
+	labelCounter++
+	return fmt.Sprintf("L%d", labelCounter)
 }
 
 func GenerateAssignExpr(tokens []string) []string {
@@ -19,11 +25,6 @@ func GenerateAssignExpr(tokens []string) []string {
 
 	target := tokens[0]
 	exprTokens := tokens[2:] // FIXED: 不再丢失最后一个 token
-
-	fmt.Println("[DEBUG] tokens:", tokens)
-	fmt.Println("[DEBUG] target:", target)
-	fmt.Println("[DEBUG] exprTokens:", exprTokens)
-
 	var stack []string
 	for i := 0; i < len(exprTokens); i++ {
 		tok := exprTokens[i]
