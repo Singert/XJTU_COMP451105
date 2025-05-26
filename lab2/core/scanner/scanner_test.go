@@ -60,7 +60,7 @@ func TestScanner(t *testing.T) {
 		var gotTokens []dfa.Token
 
 		for pos < len(inputRunes) {
-			token, length := scanner.Scan(string(inputRunes[pos:]))
+			token, length ,_,_:= scanner.Scan(string(inputRunes[pos:]))
 			if length == 0 {
 				t.Fatalf("Zero length token detected, possible infinite loop for input: %s", tt.input)
 			}

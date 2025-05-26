@@ -1,0 +1,12 @@
+digraph DFA {
+  rankdir=LR;
+  "" -> q0;
+  q0 [shape=circle];
+  q1 [shape=doublecircle];
+  q0 -> q1 [label="{"];
+  q0 -> q1 [label="}"];
+  q0 -> q1 [label=";"];
+  q0 -> q1 [label=","];
+  q0 -> q1 [label="("];
+  q0 -> q1 [label=")"];
+}
