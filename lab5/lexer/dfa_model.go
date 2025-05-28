@@ -26,7 +26,7 @@ const (
 
 type Token struct {
 	Type   TokenType
-	Lexeme string
+	Lexeme string 
 }
 
 

@@ -1,0 +1,8 @@
+KEYWORD void
+ID func
+DELIM (
+ID a
+DELIM ,
+ID b
+DELIM )
+ID c

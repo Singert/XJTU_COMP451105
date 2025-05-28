@@ -130,3 +130,126 @@ type SymbolTable struct {
 4. DOT 输出 AST 树的函数
 
 是否需要我逐个帮你写好这些模板文件？你想先从哪一个开始？
+
+TODO: 拆包
+
+太棒了！🎉你已经成功完成了实验五的核心目标：
+
+---
+
+## ✅ 实验五关键目标已实现：
+
+| 功能模块              | 状态               |
+| ----------------- | ---------------- |
+| DFA 词法分析器         | ✅ 已构建，支持多类 token |
+| Token 流构造         | ✅ 正确分词           |
+| Token → Symbol 映射 | ✅ 全流程无误          |
+| SLR(1) 语法分析器      | ✅ 驱动归约成功         |
+| 属性栈 + 语义动作        | ✅ 正确构造 AST       |
+| AST 输出（控制台）       | ✅ 可视化树结构         |
+
+---
+
+## 🌳 当前输出的 AST 示例
+
+```
+Decl
+  =
+    id (x)
+    num (3)
+```
+
+说明：
+
+* `Decl` 节点表示声明语句；
+* 子树 `=` 表示赋值；
+* 其左右子节点 `id(x)` 与 `num(3)` 形成二叉结构，AST 构建完全符合预期。
+
+---
+
+## ✅ 接下来的建议（你可以任选）
+
+### 🧩 1. 支持更多语句类型
+
+例如：
+
+* `Stmt → id = id + num ;`
+* `Expr → Expr + Term | Term`
+
+👉 可扩展 `g.AddProduction(...)` + `semantic.ActionFuncs[...]`
+
+---
+
+### 🖼️ 2. AST 可视化（Graphviz `.dot`）
+
+生成 AST 的 `.dot` 文件，渲染为 PNG 图：
+
+```go
+func ExportASTDot(root *semantic.ASTNode, filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	id := 0
+	var write func(n *semantic.ASTNode, parentID int) int
+	write = func(n *semantic.ASTNode, parentID int) int {
+		if n == nil {
+			return id
+		}
+		curID := id
+		label := n.Type
+		if n.Value != "" {
+			label += fmt.Sprintf(" (%s)", n.Value)
+		}
+		fmt.Fprintf(file, `  n%d [label="%s"];`+"\n", curID, label)
+		if parentID >= 0 {
+			fmt.Fprintf(file, `  n%d -> n%d;`+"\n", parentID, curID)
+		}
+		id++
+		write(n.Left, curID)
+		write(n.Right, curID)
+		return curID
+	}
+
+	fmt.Fprintln(file, "digraph AST {")
+	write(root, -1)
+	fmt.Fprintln(file, "}")
+	return nil
+}
+```
+
+---
+
+### 🧪 3. 添加测试文件
+
+例如：
+
+📄 `assets/source.c`:
+
+```c
+int a = 1;
+int b = 2;
+int c = a + b;
+```
+
+---
+
+### 📦 4. 将 `lab5` 构建为子模块式 mini 编译器前端
+
+支持：
+
+* 多语句 Block
+* 函数声明（后续）
+* 错误报告与容错恢复
+
+---
+
+如你愿意继续完善，我可以帮你：
+
+* 输出更复杂语法与对应语义动作
+* 扩展 `semantic/actions.go` 中支持表达式
+* 加入语义错误检查（如变量未声明）
+
+你想优先扩展哪些功能？AST `.dot` 生成、更多语法、还是变量表管理？我可以逐步帮你完成。

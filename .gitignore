@@ -1,6 +1,7 @@
 # Ignore all .dot directories in any lab folder
 **/*lab*/.dot/
 */.dot/
+**/lab?/dot/
 .dot/
 
 # Common files to ignore

@@ -112,7 +112,7 @@ func ScanAndOutput(scanner *Scanner, input string, dotPath string, tok *os.File,
 	}
 }
 
-func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok *os.File, verbose bool)  []Token {
+func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok *os.File, verbose bool) []Token {
 	tokens := []Token{}
 	pos := 0
 	inputRunes := []rune(input)
@@ -147,7 +147,7 @@ func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok
 
 		fmt.Fprintf(tok, "%s %s\n", token.Type, token.Lexeme)
 		fmt.Printf("[Token]: <%s>, [Lexeme]: '%s'\n", token.Type, token.Lexeme)
-
+		tokens = append(tokens, token)
 		dotName := fmt.Sprintf("%s/%s_%d.dot", dotPath, token.Lexeme, pos)
 		err := matchedDFA.ExportToDot(dotName, trace)
 		if err != nil {
@@ -156,4 +156,37 @@ func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok
 
 		pos += tokenLen
 	}
+	return tokens
+}
+
+
+func (s *Scanner)Tokenize(input string) []Token {
+	tokens := []Token{}
+	pos := 0
+	inputRunes := []rune(input)
+	length := len(inputRunes)
+
+	for pos < length {
+		subInput := string(inputRunes[pos:])
+		token, tokenLen, _, _ := s.Scan(subInput)
+		if tokenLen == 0 {
+			pos++ // 防止死循环
+			continue
+		}
+
+		if token.Type == TokenWithespace {
+			pos += tokenLen
+			continue
+		}
+
+		if token.Type == TokenERROR {
+			fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
+			pos += tokenLen
+			continue
+		}
+
+		tokens = append(tokens, token)
+		pos += tokenLen
+	}
+	return tokens
 }

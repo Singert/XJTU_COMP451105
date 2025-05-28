@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"lab5/lexer"
+	"lab5/semantic"
 	"lab5/syntax"
 	"os"
 	"strings"
@@ -17,13 +19,16 @@ type ParseStep struct {
 }
 
 // 主分析函数
-func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable) {
+func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token) {
 	stateStack := []int{0}
 	symbolStack := []syntax.Symbol{"#"}
+	attrStack := []interface{}{"#"}
 	steps := []ParseStep{}
-	input = append(input, "#") // 加结束符
+	input = append(input, "#")
 
-	i := 0
+	i := 0      // 当前输入符号指针
+	tokIdx := 0 // 当前 tokenStream 的指针（用于语义动作）
+
 	stepID := 0
 
 	for {
@@ -47,7 +52,6 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable) 
 			actionStr = "接受 ✅"
 		}
 
-		// 记录当前步骤
 		steps = append(steps, ParseStep{
 			ID:          stepID,
 			StateStack:  append([]int(nil), stateStack...),
@@ -55,16 +59,22 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable) 
 			Input:       currToken,
 			Action:      actionStr,
 		})
-		// 同步输出分析过程到终端
 		fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: %s\n",
 			stateStack, symbolStack, currToken, actionStr)
 		stepID++
 
-		// 执行动作
 		switch action.Typ {
 		case Shift:
 			stateStack = append(stateStack, action.Value)
 			symbolStack = append(symbolStack, currToken)
+
+			// 从 tokenStream 中提取 token 作为属性
+			if tokIdx < len(tokenStream) {
+				attrStack = append(attrStack, tokenStream[tokIdx])
+				tokIdx++
+			} else {
+				attrStack = append(attrStack, nil) // 安全兜底
+			}
 			i++
 
 		case Reduce:
@@ -86,12 +96,28 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable) 
 			}
 			stateStack = append(stateStack, newState)
 
+			// 🔧 语义动作：取出 RHS 属性，执行 action
+			children := attrStack[len(attrStack)-rhsLen:]
+			attrStack = attrStack[:len(attrStack)-rhsLen]
+			actionFunc, exists := semantic.ActionFuncs[action.Value]
+			if !exists {
+				fmt.Printf("⚠ 未定义语义动作: 产生式编号 %d\n", action.Value)
+				attrStack = append(attrStack, nil)
+			} else {
+				result := actionFunc(children)
+				attrStack = append(attrStack, result)
+			}
+
 		case Accept:
 			fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: 接受 ✅\n", stateStack, symbolStack, currToken)
 			err := ExportParseFlowDOT(steps, "parse_flow.dot")
 			if err == nil {
 				fmt.Println("✔ 分析流程图已导出为 parse_flow.dot（可用 dot -Tpng 查看）")
 			}
+
+			root := attrStack[len(attrStack)-1]
+			fmt.Println("======= 抽象语法树 AST =======")
+			semantic.PrintAST(root.(*semantic.ASTNode), 0)
 
 			return
 
