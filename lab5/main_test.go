@@ -9,6 +9,7 @@ import (
 	"lab5/parser"
 	"lab5/syntax"
 	"lab5/utils"
+
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func TestLab5(t *testing.T) {
 	}
 	fmt.Println("Starting tests...")
 	// 3. 遍历 testcases 文件夹
-	files, err := filepath.Glob("accases/*.c")
+	files, err := filepath.Glob("testcases/*.c")
 	if err != nil {
 		fmt.Println("❌ 获取测试文件失败:", err)
 		return
@@ -52,8 +53,10 @@ func TestLab5(t *testing.T) {
 		symbols := utils.TokensToSymbols(tokens)
 
 		// 语法 + 语义分析
-		parser.Run(symbols, g, dfa, table, tokens)
-
+		parsererr := parser.Run(symbols, g, dfa, table, tokens)
+		if parsererr != nil {
+			fmt.Println(parsererr.Error())
+		}
 	}
 	fmt.Println("🤬 测试完成！")
 }

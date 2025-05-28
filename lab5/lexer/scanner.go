@@ -159,16 +159,17 @@ func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok
 	return tokens
 }
 
-
-func (s *Scanner)Tokenize(input string) []Token {
+func (s *Scanner) Tokenize(input string) []Token {
 	tokens := []Token{}
 	pos := 0
 	inputRunes := []rune(input)
 	length := len(inputRunes)
-
+	fmt.Println("===TOKENIZE starting===")
 	for pos < length {
 		subInput := string(inputRunes[pos:])
 		token, tokenLen, _, _ := s.Scan(subInput)
+		token.Line = 1         //默认为1
+		token.Column = pos + 1 // 列号从1开始
 		if tokenLen == 0 {
 			pos++ // 防止死循环
 			continue
@@ -188,5 +189,26 @@ func (s *Scanner)Tokenize(input string) []Token {
 		tokens = append(tokens, token)
 		pos += tokenLen
 	}
+	// 添加显式 EOF token，行列信息取最后一个token的行列
+	if len(tokens) > 0 {
+		lastTok := tokens[len(tokens)-1]
+		eofToken := Token{
+			Type:   "EOF",
+			Lexeme: "EOF",
+			Line:   lastTok.Line,
+			Column: lastTok.Column + len(lastTok.Lexeme),
+		}
+		tokens = append(tokens, eofToken)
+	} else {
+		// 空输入时默认位置
+		eofToken := Token{
+			Type:   "EOF",
+			Lexeme: "EOF",
+			Line:   1,
+			Column: 1,
+		}
+		tokens = append(tokens, eofToken)
+	}
+	fmt.Println("===TOKENIZE completed <manually add EOF token>===")
 	return tokens
 }

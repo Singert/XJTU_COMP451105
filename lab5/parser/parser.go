@@ -19,7 +19,7 @@ type ParseStep struct {
 }
 
 // 主分析函数
-func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token) {
+func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token) *ParseError {
 	stateStack := []int{0}
 	symbolStack := []syntax.Symbol{"#"}
 	attrStack := []interface{}{"#"}
@@ -38,7 +38,8 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 		if !ok {
 			fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: ERROR\n", stateStack, symbolStack, currToken)
-			break
+			fmt.Println("111")
+			return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 		}
 
 		var actionStr string
@@ -82,7 +83,8 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			rhsLen := len(prod.Right)
 			if rhsLen > len(symbolStack) {
 				fmt.Println("❌ 归约失败：符号栈不足")
-				return
+				fmt.Println("222")
+				return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 			}
 			stateStack = stateStack[:len(stateStack)-rhsLen]
 			symbolStack = symbolStack[:len(symbolStack)-rhsLen]
@@ -92,7 +94,8 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			newState, ok := table.Goto[top][prod.Left]
 			if !ok {
 				fmt.Println("❌ GOTO失败")
-				return
+				fmt.Println("333")
+				return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 			}
 			stateStack = append(stateStack, newState)
 
@@ -117,15 +120,25 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 			root := attrStack[len(attrStack)-1]
 			fmt.Println("======= 抽象语法树 AST =======")
-			semantic.PrintAST(root.(*semantic.ASTNode), 0)
-
-			return
-
+			semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
+			// semantic.PrintAST(root.(*semantic.ASTNode), 0)
+			return nil
 		default:
 			fmt.Println("动作: ERROR")
-			return
+			fmt.Println("555")
+			return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 		}
 	}
+}
+
+// 辅助函数getAction
+func getAction(table *ParseTable, state int, token syntax.Symbol) (Action, bool) {
+	actions, ok := table.Action[state]
+	if !ok {
+		return Action{}, false
+	}
+	action, ok := actions[token]
+	return action, ok
 }
 
 // 辅助符号拼接

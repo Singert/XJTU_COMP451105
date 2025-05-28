@@ -22,11 +22,14 @@ const (
 	TokenKW    TokenType = "KEYWORD"
 	TokenERROR TokenType = "ERROR"
 	TokenWithespace TokenType = "WHITESPACE"
+	TokenEOF  TokenType = "EOF" // End of File
 )
 
 type Token struct {
 	Type   TokenType
 	Lexeme string 
+	Line  int
+	Column int
 }
 
 

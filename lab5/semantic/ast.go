@@ -29,6 +29,8 @@ type ASTNode struct {
 //		PrintAST(node.Left, indent+1)
 //		PrintAST(node.Right, indent+1)
 //	}
+
+//FIXME:banned this func
 func PrintAST(node *ASTNode, indent int) {
 	if node == nil {
 		return
@@ -51,3 +53,51 @@ func PrintAST(node *ASTNode, indent int) {
 	}
 
 }
+func PrintASTPretty(node *ASTNode, prefix string, isTail bool) {
+	if node == nil {
+		return
+	}
+
+	connector := "├─ "
+	if isTail {
+		connector = "└─ "
+	}
+
+	// 打印当前节点类型和值
+	fmt.Printf("%s%s%s", prefix, connector, node.Type)
+	if node.Value != "" {
+		fmt.Printf(" (%s)", node.Value)
+	}
+	fmt.Println()
+
+	// 计算子节点总数
+	children := []*ASTNode{}
+	if node.Left != nil {
+		children = append(children, node.Left)
+	}
+	if node.Right != nil {
+		children = append(children, node.Right)
+	}
+	children = append(children, node.Args...)
+
+	// 递归打印子节点
+	for i, child := range children {
+		last := i == len(children)-1
+		newPrefix := prefix
+		if isTail {
+			newPrefix += "    "
+		} else {
+			newPrefix += "│   "
+		}
+
+		// 对 Args 子节点加索引标注
+		if i >= (len(children) - len(node.Args)) && len(node.Args) > 0 {
+			argIndex := i - (len(children) - len(node.Args))
+			fmt.Printf("%s%sArg[%d]\n", newPrefix, map[bool]string{true: "└─ ", false: "├─ "}[last], argIndex)
+			PrintASTPretty(child, newPrefix+"    ", true)
+		} else {
+			PrintASTPretty(child, newPrefix, last)
+		}
+	}
+}
+
