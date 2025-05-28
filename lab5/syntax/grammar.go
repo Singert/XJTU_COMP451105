@@ -42,8 +42,8 @@ func (g *Grammar) AddProduction(left Symbol, right []Symbol) {
 // isTerminal checks if a symbol is a terminal based on known literals/keywords.
 func isTerminal(symb Symbol) bool {
 	switch symb {
-	case "id", "num", "int", "return", "if", "else", "while",
-		"=", "+", "-", "*", "/", "==", "<", "!", "&&", "||",
+	case "id", "num", "type_kw", "return", "if", "else", "while",
+		"=", "+", "-", "*", "/", "==", "<", "!", "&&", "||", ">", "!=", ">=", "<=",
 		"(", ")", "{", "}", ";", ",", "[", "]":
 		return true
 	default:
@@ -55,99 +55,148 @@ func isTerminal(symb Symbol) bool {
 func DefineGrammar() *Grammar {
 	g := NewGrammar("S'")
 	//0. 定义起始符号
-	g.AddProduction("S'", []Symbol{"Stmt"})
+	g.AddProduction("S'", []Symbol{"Program"})
+	// ==== 程序入口 ====
+
+	//1.
+	g.AddProduction("Program", []Symbol{"StmtList"})
+	//2.
+	g.AddProduction("Program", []Symbol{"StmtList", "EOF"}) // 程序可以以 EOF 结束
+	//3.程序可以包括函数定义
+	g.AddProduction("Program", []Symbol{"FuncList"})
+
+	//4. 函数列表
+	g.AddProduction("FuncList", []Symbol{"Func"})
+	//5. 函数列表递归定义
+	g.AddProduction("FuncList", []Symbol{"FuncList", "Func"}) // 函数列表可以有多个函数定义
+
+	// ==== 函数定义 ====
+	//6. 函数定义
+	g.AddProduction("Func", []Symbol{"Type", "id", "(", "Args", ")", "Block"}) // 函数定义
 
 	// ==== 声明语句 ====
 
-	//1. 声明语句提取为 Decl，保留语义分类
+	//7. 声明语句提取为 Decl，保留语义分类
 	g.AddProduction("Stmt", []Symbol{"Decl"})
-	//2. Decl 语句定义，支持 int、float 等类型
-	g.AddProduction("Decl", []Symbol{"int", "id", "=", "num", ";"}) // 可扩展更多类型如 float 等
+	//8. Decl 语句定义，支持 int、float 等类型
+	g.AddProduction("Decl", []Symbol{"Type", "id", "=", "Expr", ";"}) // 可扩展更多类型如 float 等
+
+	//9. 类型定义
+
+	g.AddProduction("Type", []Symbol{"type_kw"}) // 支持多种类型，如 int, float, double 等
 
 	// ==== 普通语句 ====
 
-	//3. 变量赋值
+	//10. 变量赋值
 	g.AddProduction("Stmt", []Symbol{"id", "=", "Expr", ";"})
-	//4. return 语句
+	//11. return 语句
 	g.AddProduction("Stmt", []Symbol{"return", "Expr", ";"})
-	//5. 块语句
+	//12. 块语句
 	g.AddProduction("Stmt", []Symbol{"Block"})
-	//6. if 语句
+	//13. if 语句
 	g.AddProduction("Stmt", []Symbol{"if", "(", "Cond", ")", "Stmt"})
-	//7. if-else 语句
+	//14. if-else 语句
 	g.AddProduction("Stmt", []Symbol{"if", "(", "Cond", ")", "Stmt", "else", "Stmt"})
-	//8. while 语句
+	//15. while 语句
 	g.AddProduction("Stmt", []Symbol{"while", "(", "Cond", ")", "Stmt"})
-	//9. 数组赋值
+	//16. 数组赋值
 	g.AddProduction("Stmt", []Symbol{"id", "[", "IndexList", "]", "=", "Expr", ";"})
-	//10. 函数调用语句
+	//17. 函数调用语句
 	g.AddProduction("Stmt", []Symbol{"id", "(", "Args", ")", ";"})
 
 	// === 块与语句序列 ===
 
-	//11. 块语句定义
+	//18. 块语句定义
 	g.AddProduction("Block", []Symbol{"{", "StmtList", "}"})
-	//12. 语句列表定义
+	//19. 语句列表空定义
+	g.AddProduction("StmtList", []Symbol{})
+	//20. 语句列表定义
 	g.AddProduction("StmtList", []Symbol{"Stmt"})
-	//13. 语句列表递归定义
+	//21. 语句列表递归定义
 	g.AddProduction("StmtList", []Symbol{"StmtList", "Stmt"})
 
 	// === 表达式结构 ===
-	//14. 表达式加法
-	g.AddProduction("Expr", []Symbol{"Expr", "+", "Term"})
-	//15. 表达式减法
-	g.AddProduction("Expr", []Symbol{"Expr", "-", "Term"})
-	//16. 表达式单一项
-	g.AddProduction("Expr", []Symbol{"Term"})
-	//17. 乘法项
-	g.AddProduction("Term", []Symbol{"Term", "*", "Factor"})
-	//18. 除法项
-	g.AddProduction("Term", []Symbol{"Term", "/", "Factor"})
-	//19. 基本因子
-	g.AddProduction("Term", []Symbol{"Factor"})
 
+	//22. 表达式加法
+	g.AddProduction("Expr", []Symbol{"Expr", "+", "Term"})
+	//23. 表达式减法
+	g.AddProduction("Expr", []Symbol{"Expr", "-", "Term"})
+	//24. 表达式单一项
+	g.AddProduction("Expr", []Symbol{"Term"})
+	//25. 乘法项
+	g.AddProduction("Term", []Symbol{"Term", "*", "CastExpr"}) // 乘法项可以是强制类型转换表达式
+	//26. 除法项
+	g.AddProduction("Term", []Symbol{"Term", "/", "CastExpr"}) // 除法项可以是强制类型转换表达式
+	//27. 基本因子
+	g.AddProduction("Term", []Symbol{"CastExpr"}) // 基本因子可以是强制类型转换表达式
+
+	// === 强制类型转换 ===
+	//28.
+	g.AddProduction("CastExpr", []Symbol{"CastPrefix", "Factor"}) // 强制类型转换
+	//29.
+	g.AddProduction("CastExpr", []Symbol{"Factor"}) // 基本因子作为强制类型转换的基础
+	//30.
+	g.AddProduction("CastPrefix", []Symbol{"(", "Type", ")"})
 	// === 基本因子 + 函数调用 ===
-	
-	//20. 函数调用
+
+	//31. 函数调用
 	g.AddProduction("Factor", []Symbol{"id", "(", "Args", ")"}) // 函数调用
-	//21. 数字因子
+	//32. 数字因子
 	g.AddProduction("Factor", []Symbol{"num"})
-	//22. 标识符因子
+	//33. 标识符因子
 	g.AddProduction("Factor", []Symbol{"id"})
-	//23. 括号表达式
+	//34. 括号表达式
 	g.AddProduction("Factor", []Symbol{"(", "Expr", ")"})
+	//35. 数组索引
+	g.AddProduction("Factor", []Symbol{"id", "[", "IndexList", "]"}) // 数组索引
 
 	// === 函数参数列表 ===
-	//24. 函数参数列表非空
-	g.AddProduction("Args", []Symbol{"NonEmptyArgs"})                  
-	//25. 函数参数列表空
-	g.AddProduction("Args", []Symbol{})                                    
-	//26. 非空参数单个表达式
-	g.AddProduction("NonEmptyArgs", []Symbol{"Expr"})                      
-	//27. 非空参数递归定义
-	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Expr"}) 
-
+	//36. 函数参数列表非空
+	g.AddProduction("Args", []Symbol{"NonEmptyArgs"})
+	//37. 函数参数列表空
+	g.AddProduction("Args", []Symbol{})
+	//38. 非空参数单个表达式
+	g.AddProduction("NonEmptyArgs", []Symbol{"Expr"})
+	//39. 非空参数递归定义
+	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Expr"})
+	//40. type+id
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id"})
+	//41. 支持带默认值的参数
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id", "=", "Expr"}) //
+	//42. 非空参数可以是多个类型+标识符
+	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Type", "id"}) // 支持多个参数
+	//43. 非空参数可以是多个类型+标识符+默认值
+	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Type", "id", "=", "Expr"}) // 支持多个参数
 	// === 多维数组索引 ===
 
-	//28. 数组索引单个表达式
+	//44. 数组索引单个表达式
 	g.AddProduction("IndexList", []Symbol{"Expr"})
-	//29. 数组索引递归定义
+	//45. 数组索引递归定义
 	g.AddProduction("IndexList", []Symbol{"IndexList", ",", "Expr"})
 
 	// === 条件表达式 ===
-	//30. 条件表达式与运算
+	//46. 条件表达式与运算
 	g.AddProduction("Cond", []Symbol{"Cond", "&&", "Cond"})
-	//31. 条件表达式或运算
+	//47. 条件表达式或运算
 	g.AddProduction("Cond", []Symbol{"Cond", "||", "Cond"})
-	//32. 条件表达式非运算
+	//48. 条件表达式非运算
 	g.AddProduction("Cond", []Symbol{"!", "Cond"})
-	//33. 条件表达式小于比较
+	//49. 条件表达式小于比较
 	g.AddProduction("Cond", []Symbol{"Expr", "<", "Expr"})
-	//34. 条件表达式等于比较
+	//50.  条件表达式大于比较
+	g.AddProduction("Cond", []Symbol{"Expr", ">", "Expr"})
+	//51. 条件表达式小于等于比较
+	g.AddProduction("Cond", []Symbol{"Expr", "<=", "Expr"})
+	//52. 条件表达式大于等于比较
+	g.AddProduction("Cond", []Symbol{"Expr", ">=", "Expr"})
+	//53. 条件表达式等于比较
+	g.AddProduction("Cond", []Symbol{"Expr", "!=", "Expr"})
+	//54. 条件表达式等于比较
 	g.AddProduction("Cond", []Symbol{"Expr", "==", "Expr"})
-	//35. 条件表达式括号
+
+	//55. 条件表达式括号
 	g.AddProduction("Cond", []Symbol{"(", "Cond", ")"})
-	//36. 条件表达式单一表达式
+	//56. 条件表达式单一表达式
 	g.AddProduction("Cond", []Symbol{"Expr"})
 
 	return g

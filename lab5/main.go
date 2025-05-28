@@ -21,7 +21,7 @@ func main() {
 	code := string(codeBytes)
 
 	// 3. Tokenize → Symbol
-	tokens := scanner.Tokenize(code)
+	tokens := scanner.Tokenize(code,false)
 	symbols := utils.TokensToSymbols(tokens)
 
 	// 4. 构造文法
@@ -33,7 +33,7 @@ func main() {
 	table := parser.BuildParseTable(g, dfa, follow)
 
 	// 6. 调用 parser + 语义分析
-	parser.Run(symbols, g, dfa, table, tokens)
+	parser.Run(symbols, g, dfa, table, tokens,false)
 }
 
 // ---

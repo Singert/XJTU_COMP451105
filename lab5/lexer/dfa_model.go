@@ -23,6 +23,7 @@ const (
 	TokenERROR TokenType = "ERROR"
 	TokenWithespace TokenType = "WHITESPACE"
 	TokenEOF  TokenType = "EOF" // End of File
+	TokenTYPE_KW TokenType ="TYPE_KW" // Type keyword (e.g., int, float, char, etc.)
 )
 
 type Token struct {

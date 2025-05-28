@@ -19,7 +19,7 @@ type ParseStep struct {
 }
 
 // 主分析函数
-func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token) *ParseError {
+func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token, verbose bool) *ParseError {
 	stateStack := []int{0}
 	symbolStack := []syntax.Symbol{"#"}
 	attrStack := []interface{}{"#"}
@@ -60,8 +60,10 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			Input:       currToken,
 			Action:      actionStr,
 		})
-		fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: %s\n",
-			stateStack, symbolStack, currToken, actionStr)
+		if verbose {
+			fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: %s\n",
+				stateStack, symbolStack, currToken, actionStr)
+		}
 		stepID++
 
 		switch action.Typ {

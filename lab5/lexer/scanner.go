@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"lab5/syntax"
 	"os"
 	"unicode"
 )
@@ -63,7 +64,7 @@ func (s *Scanner) Scan(input string) (matched Token, length int, matchedDFA *DFA
 		}
 	}
 
-	_, _ = maxDFA.MatchDFA(maxToken.Lexeme, true)
+	_, _ = maxDFA.MatchDFA(maxToken.Lexeme, false)
 	return maxToken, maxLen, maxDFA, maxTrace
 }
 
@@ -159,7 +160,7 @@ func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok
 	return tokens
 }
 
-func (s *Scanner) Tokenize(input string) []Token {
+func (s *Scanner) Tokenize(input string, verbose bool) []Token {
 	tokens := []Token{}
 	pos := 0
 	inputRunes := []rune(input)
@@ -185,7 +186,9 @@ func (s *Scanner) Tokenize(input string) []Token {
 			pos += tokenLen
 			continue
 		}
-
+		if verbose {
+			fmt.Printf("[Token]: <%s>, [Lexeme]: <%s> [symbol]:<%s>\n", token.Type, token.Lexeme, tokenToSymbol(token))
+		}
 		tokens = append(tokens, token)
 		pos += tokenLen
 	}
@@ -211,4 +214,20 @@ func (s *Scanner) Tokenize(input string) []Token {
 	}
 	fmt.Println("===TOKENIZE completed <manually add EOF token>===")
 	return tokens
+}
+func tokenToSymbol(tok Token) syntax.Symbol {
+	switch tok.Type {
+	case TokenID:
+		return "id"
+	case TokenNUM, TokenFLO:
+		return "num"
+	case TokenOP, TokenDELIM, TokenKW:
+		return syntax.Symbol(tok.Lexeme)
+	case TokenTYPE_KW:
+		return "type_kw" // Type keyword
+	case TokenEOF:
+		return "#"
+	default:
+		return "?" // 识别失败
+	}
 }

@@ -71,6 +71,7 @@ func (d *DFA) MatchDFA(input string, verbose bool) (bool, []TransitionTrace) {
 		})
 
 		if verbose {
+			print("AAA")
 			fmt.Printf("Step %d: %s --%s--> %s\n", i+1, currentState, symbol, nextState)
 		}
 		currentState = nextState
