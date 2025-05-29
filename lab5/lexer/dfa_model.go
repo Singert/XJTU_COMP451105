@@ -22,6 +22,8 @@ const (
 	TokenKW    TokenType = "KEYWORD"
 	TokenERROR TokenType = "ERROR"
 	TokenWithespace TokenType = "WHITESPACE"
+	TokenChar TokenType = "CHAR" // Character literal
+	TokenString TokenType = "STRING" // String literal
 	TokenEOF  TokenType = "EOF" // End of File
 	TokenTYPE_KW TokenType ="TYPE_KW" // Type keyword (e.g., int, float, char, etc.)
 )

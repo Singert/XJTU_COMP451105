@@ -1,0 +1,8 @@
+void foo( ) {
+    int a = 5;
+    if (a = 3) {             
+        print a;
+    }
+    return a
+};
+foo()

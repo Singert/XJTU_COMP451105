@@ -1,0 +1,7 @@
+void func() {
+    int a = 3;
+    if (a && 5) {  
+        a = 10;
+    }
+};
+func()
