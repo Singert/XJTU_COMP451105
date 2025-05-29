@@ -2,7 +2,6 @@ package semantic
 
 import (
 	"fmt"
-	"strings"
 )
 
 // ASTNode 是抽象语法树的节点定义
@@ -13,23 +12,6 @@ type ASTNode struct {
 	Right *ASTNode   // 右子节点
 	Args  []*ASTNode // 可选的参数列表，用于函数调用或数组索引等
 }
-
-// PrintAST 递归打印抽象语法树，带缩进
-//
-//	func PrintAST(node *ASTNode, indent int) {
-//		if node == nil {
-//			return
-//		}
-//		prefix := strings.Repeat("  ", indent)
-//		fmt.Printf("%s%s", prefix, node.Type)
-//		if node.Value != "" {
-//			fmt.Printf(" (%s)", node.Value)
-//		}
-//		fmt.Println()
-//		PrintAST(node.Left, indent+1)
-//		PrintAST(node.Right, indent+1)
-//	}
-
 
 func PrintASTPretty(node *ASTNode, prefix string, isTail bool) {
 	if node == nil {
@@ -69,7 +51,7 @@ func PrintASTPretty(node *ASTNode, prefix string, isTail bool) {
 		}
 
 		// 对 Args 子节点加索引标注
-		if i >= (len(children) - len(node.Args)) && len(node.Args) > 0 {
+		if i >= (len(children)-len(node.Args)) && len(node.Args) > 0 {
 			argIndex := i - (len(children) - len(node.Args))
 			fmt.Printf("%s%sArg[%d]\n", newPrefix, map[bool]string{true: "└─ ", false: "├─ "}[last], argIndex)
 			PrintASTPretty(child, newPrefix+"    ", true)
@@ -78,4 +60,3 @@ func PrintASTPretty(node *ASTNode, prefix string, isTail bool) {
 		}
 	}
 }
-

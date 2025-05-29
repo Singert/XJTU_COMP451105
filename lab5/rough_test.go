@@ -35,7 +35,7 @@ func TestLab5Rough(t *testing.T) {
 	}
 	fmt.Println("Starting tests...")
 	// 3. 遍历 testcases 文件夹
-	files, err := filepath.Glob("accases/*/*.c")
+	files, err := filepath.Glob("testcases/finalcases/*.c")
 	if err != nil {
 		fmt.Println("❌ 获取测试文件失败:", err)
 		return

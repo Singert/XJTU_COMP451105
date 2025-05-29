@@ -42,7 +42,7 @@ func (g *Grammar) AddProduction(left Symbol, right []Symbol) {
 // isTerminal checks if a symbol is a terminal based on known literals/keywords.
 func isTerminal(symb Symbol) bool {
 	switch symb {
-	case "id", "num", "float", "double", "string", "char", "type_kw", "return", "if", "else", "while",
+	case "id", "num", "float", "double", "string", "char", "type_kw", "return", "if", "for", "else", "while",
 		"=", "+", "-", "*", "/", "==", "<", "!", "&&", "||", ">", "!=", ">=", "<=",
 		"(", ")", "{", "}", ";", ",", "[", "]":
 		return true
@@ -51,7 +51,6 @@ func isTerminal(symb Symbol) bool {
 	}
 }
 
-// DefineGrammar defines the grammar and all its productions.
 func DefineGrammar() *Grammar {
 	g := NewGrammar("S'")
 
@@ -142,78 +141,117 @@ func DefineGrammar() *Grammar {
 	g.AddProduction("Factor", []Symbol{"float"})
 	// 文法 32
 	g.AddProduction("Factor", []Symbol{"char"})
-	g.AddProduction("Factor", []Symbol{"string"})
-	g.AddProduction("Factor", []Symbol{"id"})
-	// 文法 32
-	g.AddProduction("Factor", []Symbol{"(", "Expr", ")"})
 	// 文法 33
+	g.AddProduction("Factor", []Symbol{"string"})
+	// 文法 34
+	g.AddProduction("Factor", []Symbol{"id"})
+	// 文法 35
+	g.AddProduction("Factor", []Symbol{"(", "Expr", ")"})
+	// 文法 36
 	g.AddProduction("Factor", []Symbol{"id", "MultiIndex"})
 
 	// ==== 函数参数列表 ====
-	// 文法 34
-	g.AddProduction("Args", []Symbol{"NonEmptyArgs"})
-	// 文法 35
-	g.AddProduction("Args", []Symbol{})
-	// 文法 36
-	g.AddProduction("NonEmptyArgs", []Symbol{"Expr"})
 	// 文法 37
-	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Expr"})
+	g.AddProduction("Args", []Symbol{"NonEmptyArgs"})
 	// 文法 38
-	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id"})
+	g.AddProduction("Args", []Symbol{})
+
 	// 文法 39
-	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id", "=", "Expr"})
+	g.AddProduction("NonEmptyArgs", []Symbol{"Expr"})
 	// 文法 40
-	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Type", "id"})
+	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Expr"})
 	// 文法 41
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id"})
+	// 文法 42
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id", "=", "Expr"})
+	// 文法 43
+	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Type", "id"})
+	// 文法 44
 	g.AddProduction("NonEmptyArgs", []Symbol{"NonEmptyArgs", ",", "Type", "id", "=", "Expr"})
 
 	// ==== 多维数组索引 ====
-	// 文法 42
+	// 文法 45
 	g.AddProduction("IndexList", []Symbol{"Expr"})
-	// 文法 43
+	// 文法 46
 	g.AddProduction("IndexList", []Symbol{"IndexList", ",", "Expr"})
 
 	// ==== 条件表达式 ====
-	// 文法 44
-	g.AddProduction("Cond", []Symbol{"Cond", "&&", "Cond"})
-	// 文法 45
-	g.AddProduction("Cond", []Symbol{"Cond", "||", "Cond"})
-	// 文法 46
-	g.AddProduction("Cond", []Symbol{"!", "Cond"})
 	// 文法 47
-	g.AddProduction("Cond", []Symbol{"Expr", "<", "Expr"})
+	g.AddProduction("Cond", []Symbol{"Cond", "&&", "Cond"})
 	// 文法 48
-	g.AddProduction("Cond", []Symbol{"Expr", ">", "Expr"})
+	g.AddProduction("Cond", []Symbol{"Cond", "||", "Cond"})
 	// 文法 49
-	g.AddProduction("Cond", []Symbol{"Expr", "<=", "Expr"})
+	g.AddProduction("Cond", []Symbol{"!", "Cond"})
 	// 文法 50
-	g.AddProduction("Cond", []Symbol{"Expr", ">=", "Expr"})
+	g.AddProduction("Cond", []Symbol{"Expr", "<", "Expr"})
 	// 文法 51
-	g.AddProduction("Cond", []Symbol{"Expr", "!=", "Expr"})
+	g.AddProduction("Cond", []Symbol{"Expr", ">", "Expr"})
 	// 文法 52
-	g.AddProduction("Cond", []Symbol{"Expr", "==", "Expr"})
+	g.AddProduction("Cond", []Symbol{"Expr", "<=", "Expr"})
 	// 文法 53
-	g.AddProduction("Cond", []Symbol{"(", "Cond", ")"})
+	g.AddProduction("Cond", []Symbol{"Expr", ">=", "Expr"})
 	// 文法 54
+	g.AddProduction("Cond", []Symbol{"Expr", "!=", "Expr"})
+	// 文法 55
+	g.AddProduction("Cond", []Symbol{"Expr", "==", "Expr"})
+	// 文法 56
+	g.AddProduction("Cond", []Symbol{"(", "Cond", ")"})
+	// 文法 57
 	g.AddProduction("Cond", []Symbol{"Expr"})
 
-	// 额外添加数组声明产生式
-	// // 文法 55
-	// g.AddProduction("Decl", []Symbol{"Type", "id", "[", "IndexList", "]", ";"})
-	// // 文法 56
-	// g.AddProduction("Decl", []Symbol{"Type", "id", "[", "IndexList", "]", "=", "Expr", ";"})
+	// ==== 数组声明 ====
+	// 文法 58
 	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", ";"})
+	// 文法 59
 	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", "=", "Expr", ";"})
-
+	// 文法 60
 	g.AddProduction("MultiIndex", []Symbol{"[", "IndexList", "]", "MultiIndex"})
-	g.AddProduction("MultiIndex", []Symbol{}) // 终止符号
-	// 文法 57 :允许初始化列表
+	// 文法 61
+	g.AddProduction("MultiIndex", []Symbol{})
+
+	// 文法 62
 	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", "=", "InitList", ";"})
+
+	// 文法 63
 	g.AddProduction("InitList", []Symbol{"{", "NonEmptyInitList", "}"})
+	// 文法 64
 	g.AddProduction("InitList", []Symbol{"{", "}"})
+
+	// 文法 65
 	g.AddProduction("NonEmptyInitList", []Symbol{"Expr"})
+	// 文法 66
 	g.AddProduction("NonEmptyInitList", []Symbol{"NonEmptyInitList", ",", "Expr"})
-	// 保留Expr ->InitList
+
+	// 文法 67
 	g.AddProduction("Expr", []Symbol{"InitList"})
+
+	// ==== 一元负号 ====
+	// 文法 68
+	g.AddProduction("Factor", []Symbol{"-", "Factor"})
+
+	// ==== 支持带数组下标的形参声明 ====
+	// 文法 69
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id", "MultiIndex"})
+	// 文法 70
+	g.AddProduction("NonEmptyArgs", []Symbol{"Type", "id", "MultiIndex", "=", "Expr"})
+
+	// ==== 支持空的IndexList ====
+	// 文法 71
+	g.AddProduction("IndexList", []Symbol{})
+
+	// ==== 支持 for 循环 ====
+	// 文法 72
+	g.AddProduction("Stmt", []Symbol{"for", "(", "ForInit", ";", "Cond", ";", "Expr", ")", "Stmt"})
+	// 文法 73
+	g.AddProduction("ForInit", []Symbol{"Decl"})
+	// 文法 74
+	g.AddProduction("ForInit", []Symbol{"Expr"})
+	// 文法 75
+	g.AddProduction("ForInit", []Symbol{})
+
+	// ==== 赋值表达式支持 ====
+	// 文法 76
+	g.AddProduction("Expr", []Symbol{"id", "=", "Expr"})
+
 	return g
 }

@@ -34,7 +34,7 @@ func TestLab5Detialed(t *testing.T) {
 	}
 	fmt.Println("Starting tests...")
 	// 3. 遍历 testcases 文件夹
-	files, err := filepath.Glob("testcases/*/*.c")
+	files, err := filepath.Glob("testcases/finalcases/*.c")
 	if err != nil {
 		fmt.Println("❌ 获取测试文件失败:", err)
 		return
@@ -51,7 +51,7 @@ func TestLab5Detialed(t *testing.T) {
 		code := string(data)
 		tokens := scanner.Tokenize(code, true)
 		symbols := utils.TokensToSymbols(tokens)
-
+		// 4. 初始化符号表
 		// 语法 + 语义分析
 		parsererr := parser.Run(symbols, g, dfa, table, tokens, true)
 		if parsererr != nil {

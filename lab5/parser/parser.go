@@ -28,8 +28,11 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 	i := 0      // 当前输入符号指针
 	tokIdx := 0 // 当前 tokenStream 的指针（用于语义动作）
-
 	stepID := 0
+	// 符号表管理
+
+	//测试字段：记录调用过的ActionFuncs 序号
+	calledActionFuncs := []int{}
 
 	for {
 		currState := stateStack[len(stateStack)-1]
@@ -55,6 +58,10 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 				root := attrStack[len(attrStack)-1]
 				fmt.Println("======= 抽象语法树 AST =======")
 				semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
+				fmt.Println("======= 语义动作调用记录 =======")
+				if len(calledActionFuncs) > 0 {
+					fmt.Println("已调用的语义动作函数序号:", calledActionFuncs)
+				}
 				return nil
 			} else {
 				// 没有接受动作，报错
@@ -140,6 +147,7 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			} else {
 				result := actionFunc(children)
 				attrStack = append(attrStack, result)
+				calledActionFuncs = append(calledActionFuncs, action.Value) // 记录调用过的 ActionFunc 序号
 			}
 
 		case Accept:
@@ -150,9 +158,17 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			}
 
 			root := attrStack[len(attrStack)-1]
+			fmt.Println("======= 语义动作调用记录 =======")
+			if len(calledActionFuncs) > 0 {
+				fmt.Println("已调用的语义动作函数序号:", calledActionFuncs)
+			}
 			fmt.Println("======= 抽象语法树 AST =======")
 			semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
-			// semantic.PrintAST(root.(*semantic.ASTNode), 0)
+
+			// ===== 生成四元组 =====
+			fmt.Println("======= 四元组 =======")
+			semantic.PrintQuadruples()
+			fmt.Println("分析成功！")
 			return nil
 		default:
 			fmt.Println("动作: ERROR")

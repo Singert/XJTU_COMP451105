@@ -19,8 +19,6 @@ type Action struct {
 	Value int // Shift: 目标状态，Reduce: 产生式编号
 }
 
-// ACTION[state][terminal] = Action
-// GOTO[state][nonterminal] = int
 type ParseTable struct {
 	Action map[int]map[syntax.Symbol]Action
 	Goto   map[int]map[syntax.Symbol]int
