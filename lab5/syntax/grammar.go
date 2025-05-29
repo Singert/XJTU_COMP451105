@@ -42,7 +42,7 @@ func (g *Grammar) AddProduction(left Symbol, right []Symbol) {
 // isTerminal checks if a symbol is a terminal based on known literals/keywords.
 func isTerminal(symb Symbol) bool {
 	switch symb {
-	case "id", "num", "type_kw", "return", "if", "else", "while",
+	case "id", "num", "float", "double", "string", "char", "type_kw", "return", "if", "else", "while",
 		"=", "+", "-", "*", "/", "==", "<", "!", "&&", "||", ">", "!=", ">=", "<=",
 		"(", ")", "{", "}", ";", ",", "[", "]":
 		return true
@@ -117,6 +117,7 @@ func DefineGrammar() *Grammar {
 	g.AddProduction("Expr", []Symbol{"Expr", "-", "Term"})
 	// 文法 22
 	g.AddProduction("Expr", []Symbol{"Term"})
+
 	// 文法 23
 	g.AddProduction("Term", []Symbol{"Term", "*", "CastExpr"})
 	// 文法 24
@@ -138,11 +139,15 @@ func DefineGrammar() *Grammar {
 	// 文法 30
 	g.AddProduction("Factor", []Symbol{"num"})
 	// 文法 31
+	g.AddProduction("Factor", []Symbol{"float"})
+	// 文法 32
+	g.AddProduction("Factor", []Symbol{"char"})
+	g.AddProduction("Factor", []Symbol{"string"})
 	g.AddProduction("Factor", []Symbol{"id"})
 	// 文法 32
 	g.AddProduction("Factor", []Symbol{"(", "Expr", ")"})
 	// 文法 33
-	g.AddProduction("Factor", []Symbol{"id",  "MultiIndex"})
+	g.AddProduction("Factor", []Symbol{"id", "MultiIndex"})
 
 	// ==== 函数参数列表 ====
 	// 文法 34
@@ -200,8 +205,15 @@ func DefineGrammar() *Grammar {
 	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", ";"})
 	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", "=", "Expr", ";"})
 
-	g.AddProduction("MultiIndex", []Symbol{"[", "IndexList", "]","MultiIndex"})
+	g.AddProduction("MultiIndex", []Symbol{"[", "IndexList", "]", "MultiIndex"})
 	g.AddProduction("MultiIndex", []Symbol{}) // 终止符号
-
+	// 文法 57 :允许初始化列表
+	g.AddProduction("Decl", []Symbol{"Type", "id", "MultiIndex", "=", "InitList", ";"})
+	g.AddProduction("InitList", []Symbol{"{", "NonEmptyInitList", "}"})
+	g.AddProduction("InitList", []Symbol{"{", "}"})
+	g.AddProduction("NonEmptyInitList", []Symbol{"Expr"})
+	g.AddProduction("NonEmptyInitList", []Symbol{"NonEmptyInitList", ",", "Expr"})
+	// 保留Expr ->InitList
+	g.AddProduction("Expr", []Symbol{"InitList"})
 	return g
 }

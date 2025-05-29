@@ -30,29 +30,7 @@ type ASTNode struct {
 //		PrintAST(node.Right, indent+1)
 //	}
 
-//FIXME:banned this func
-func PrintAST(node *ASTNode, indent int) {
-	if node == nil {
-		return
-	}
-	prefix := strings.Repeat("  ", indent)
-	fmt.Printf("%s%s", prefix, node.Type)
-	if node.Value != "" {
-		fmt.Printf(" (%s)", node.Value)
-	}
-	fmt.Println()
 
-	// 递归打印 Left 和 Right
-	PrintAST(node.Left, indent+1)
-	PrintAST(node.Right, indent+1)
-
-	// 递归打印 Args 中的所有子节点
-	for i, child := range node.Args {
-		fmt.Printf("%sArg[%d]:\n", prefix+"  ", i)
-		PrintAST(child, indent+2)
-	}
-
-}
 func PrintASTPretty(node *ASTNode, prefix string, isTail bool) {
 	if node == nil {
 		return

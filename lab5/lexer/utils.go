@@ -1,6 +1,5 @@
 package lexer
 
-
 // util function to check if a string exists in a slice
 func Contains(slice []string, item string) bool {
 	for _, s := range slice {
@@ -10,46 +9,39 @@ func Contains(slice []string, item string) bool {
 	}
 	return false
 }
+
 // 辅助识别char和string
-func (s *Scanner) scanCharOrString(input string) (Token, int) {
-	if len(input) == 0 {
+func (s *Scanner) scanCharOrString(runes []rune) (Token, int) {
+	if len(runes) == 0 {
 		return Token{Type: TokenERROR, Lexeme: ""}, 0
 	}
-	runes := []rune(input)
 	if runes[0] == '\'' {
-		// 处理 char 字符常量
-		// 格式示例：'a', '\n', '\'', '\\'
 		if len(runes) < 3 {
-			return Token{Type: TokenERROR, Lexeme: input}, len(runes)
+			return Token{Type: TokenERROR, Lexeme: string(runes)}, len(runes)
 		}
-		// 简单处理转义字符情况
 		if runes[1] == '\\' {
 			if len(runes) < 4 || runes[3] != '\'' {
 				return Token{Type: TokenERROR, Lexeme: string(runes[:min(4, len(runes))])}, min(4, len(runes))
 			}
-			return Token{Type: "CHAR", Lexeme: string(runes[:4])}, 4
+			return Token{Type: TokenCHAR, Lexeme: string(runes[:4])}, 4
 		} else {
 			if runes[2] != '\'' {
 				return Token{Type: TokenERROR, Lexeme: string(runes[:min(3, len(runes))])}, min(3, len(runes))
 			}
-			return Token{Type: "CHAR", Lexeme: string(runes[:3])}, 3
+			return Token{Type: TokenCHAR, Lexeme: string(runes[:3])}, 3
 		}
 	} else if runes[0] == '"' {
-		// 处理 string 字符串常量
 		i := 1
 		for i < len(runes) {
 			if runes[i] == '\\' {
-				// 跳过转义符及下一个字符
 				i += 2
 			} else if runes[i] == '"' {
-				// 结束引号
-				return Token{Type: "STRING", Lexeme: string(runes[:i+1])}, i + 1
+				return Token{Type: TokenSTRING, Lexeme: string(runes[:i+1])}, i + 1
 			} else {
 				i++
 			}
 		}
-		// 没有找到结束引号，错误
-		return Token{Type: TokenERROR, Lexeme: input}, len(runes)
+		return Token{Type: TokenERROR, Lexeme: string(runes)}, len(runes)
 	}
 	return Token{Type: TokenERROR, Lexeme: string(runes[0])}, 1
 }
@@ -59,4 +51,37 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// scanComment 扫描注释，输入是runes切片，返回识别到的注释Token和长度
+func (s *Scanner) scanComment(runes []rune) (Token, int) {
+	if len(runes) < 2 {
+		return Token{Type: TokenERROR, Lexeme: string(runes)}, len(runes)
+	}
+
+	if runes[0] == '/' && runes[1] == '/' {
+		// 单行注释扫描，扫描到行尾或文件尾
+		i := 2
+		for i < len(runes) && runes[i] != '\n' {
+			i++
+		}
+		return Token{Type: TokenCOMMENT_SINGLE, Lexeme: string(runes[:i])}, i
+	}
+
+	if runes[0] == '/' && runes[1] == '*' {
+		// 多行注释扫描，扫描到匹配的 */
+		i := 2
+		for i < len(runes)-1 {
+			if runes[i] == '*' && runes[i+1] == '/' {
+				i += 2
+				return Token{Type: TokenCOMMENT_MULTI, Lexeme: string(runes[:i])}, i
+			}
+			i++
+		}
+		// 未找到结束符，返回错误Token，长度为输入长度（到文件尾）
+		return Token{Type: TokenERROR, Lexeme: string(runes)}, len(runes)
+	}
+
+	// 不是注释起始符
+	return Token{Type: TokenERROR, Lexeme: string(runes[:1])}, 1
 }

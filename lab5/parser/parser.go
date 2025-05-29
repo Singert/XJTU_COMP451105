@@ -33,6 +33,35 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 	for {
 		currState := stateStack[len(stateStack)-1]
+		// 跳过注释Token
+		for tokIdx < len(tokenStream) &&
+			(tokenStream[tokIdx].Type == lexer.TokenCOMMENT_SINGLE || tokenStream[tokIdx].Type == lexer.TokenCOMMENT_MULTI) {
+			i++
+			tokIdx++
+		}
+
+		// 如果已读到输入末尾
+		if i >= len(input) {
+			// 检查当前状态对终结符 '#' 是否有动作
+			action, ok := table.Action[currState]["#"]
+			if ok && action.Typ == Accept {
+				// 接受状态，语法分析成功
+				fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: 接受 ✅\n", stateStack, symbolStack, "#")
+				err := ExportParseFlowDOT(steps, "parse_flow.dot")
+				if err == nil {
+					fmt.Println("✔ 分析流程图已导出为 parse_flow.dot（可用 dot -Tpng 查看）")
+				}
+
+				root := attrStack[len(attrStack)-1]
+				fmt.Println("======= 抽象语法树 AST =======")
+				semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
+				return nil
+			} else {
+				// 没有接受动作，报错
+				fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: EOF\t动作: ERROR\n", stateStack, symbolStack)
+				return CatchParseError(currState, "#", tokenStream, tokIdx, table)
+			}
+		}
 		currToken := input[i]
 		action, ok := table.Action[currState][currToken]
 
@@ -202,28 +231,3 @@ func ExportParseFlowDOT(steps []ParseStep, filename string) error {
 	fmt.Fprintln(file, "}")
 	return nil
 }
-
-// func ExportParseFlowDOT(steps []ParseStep, filename string) error {
-// 	file, err := os.Create(filename)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
-
-// 	fmt.Fprintln(file, "digraph ParseFlow {")
-// 	fmt.Fprintln(file, `  rankdir=LR;`)
-// 	fmt.Fprintln(file, `  node [shape=box, fontname="monospace"];`)
-
-// 	for _, step := range steps {
-// 		label := fmt.Sprintf("栈: %v\\n符号: %v\\n输入: %s\\n动作: %s",
-// 			step.StateStack, step.SymbolStack, step.Input, step.Action)
-// 		fmt.Fprintf(file, `  step%d [label="%s"];`+"\n", step.ID, label)
-// 	}
-
-// 	for i := 0; i < len(steps)-1; i++ {
-// 		fmt.Fprintf(file, "  step%d -> step%d;\n", steps[i].ID, steps[i+1].ID)
-// 	}
-
-// 	fmt.Fprintln(file, "}")
-// 	return nil
-// }

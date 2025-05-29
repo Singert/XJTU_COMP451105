@@ -28,6 +28,13 @@ func (s *Scanner) Scan(input string) (matched Token, length int, matchedDFA *DFA
 	}
 
 	runes := []rune(input)
+
+	// 优先检测注释
+	if len(runes) >= 2 && runes[0] == '/' && (runes[1] == '/' || runes[1] == '*') {
+		token, length := s.scanComment(runes)
+		return token, length, nil, nil
+	}
+	// 检测空白字符
 	if unicode.IsSpace(runes[0]) {
 		i := 1
 		for i < len(runes) && unicode.IsSpace(runes[i]) {
@@ -35,7 +42,11 @@ func (s *Scanner) Scan(input string) (matched Token, length int, matchedDFA *DFA
 		}
 		return Token{Type: TokenWithespace, Lexeme: string(runes[:i])}, i, nil, nil
 	}
-
+	// 检测字符串和字符字面量
+	if runes[0] == '\'' || runes[0] == '"' {
+		token, len := s.scanCharOrString(runes)
+		return token, len, nil, nil
+	}
 	maxLen := 0
 	var maxToken Token
 	var maxDFA *DFA
@@ -160,50 +171,89 @@ func ScanAndOutputWithStream(scanner *Scanner, input string, dotPath string, tok
 	return tokens
 }
 
+// Tokenize 扫描输入字符串并生成 Token 列表
 func (s *Scanner) Tokenize(input string, verbose bool) []Token {
 	tokens := []Token{}
 	pos := 0
 	inputRunes := []rune(input)
 	length := len(inputRunes)
+
+	line := 1
+	col := 1
+
 	fmt.Println("===TOKENIZE starting===")
 	for pos < length {
 		subInput := string(inputRunes[pos:])
 		token, tokenLen, _, _ := s.Scan(subInput)
-		token.Line = 1         //默认为1
-		token.Column = pos + 1 // 列号从1开始
+
+		// 赋值行列给token
+		token.Line = line
+		token.Column = col
+
 		if tokenLen == 0 {
-			pos++ // 防止死循环
+			pos++
+			col++
 			continue
 		}
 
 		if token.Type == TokenWithespace {
+			// 统计空白中的换行数量，更新行列
+			for i := 0; i < tokenLen; i++ {
+				if inputRunes[pos+i] == '\n' {
+					line++
+					col = 1
+				} else {
+					col++
+				}
+			}
 			pos += tokenLen
 			continue
 		}
 
 		if token.Type == TokenERROR {
-			fmt.Printf("❌ Error: invalid token '%s' at position %d\n", token.Lexeme, pos)
+			fmt.Printf("❌ Error: invalid token '%s' at line %d, column %d\n", token.Lexeme, line, col)
+			// 同样更新行列
+			for i := 0; i < tokenLen; i++ {
+				if inputRunes[pos+i] == '\n' {
+					line++
+					col = 1
+				} else {
+					col++
+				}
+			}
 			pos += tokenLen
 			continue
 		}
+
 		if verbose {
-			fmt.Printf("[Token]: <%s>, [Lexeme]: <%s> [symbol]:<%s>\n", token.Type, token.Lexeme, tokenToSymbol(token))
+			fmt.Printf("[Token]: <%s>, [Lexeme]: <%s> [symbol]:<%s> at line %d, column %d\n",
+				token.Type, token.Lexeme, tokenToSymbol(token), token.Line, token.Column)
 		}
 		tokens = append(tokens, token)
+
+		// 更新行列，统计token中的换行
+		for i := 0; i < tokenLen; i++ {
+			if inputRunes[pos+i] == '\n' {
+				line++
+				col = 1
+			} else {
+				col++
+			}
+		}
 		pos += tokenLen
 	}
-	// 添加显式 EOF token，行列信息取最后一个token的行列
+
+	// 添加EOF token，行列取最后一个token结束处
 	if len(tokens) > 0 {
 		lastTok := tokens[len(tokens)-1]
 		eofToken := Token{
 			Type:   "EOF",
 			Lexeme: "EOF",
 			Line:   lastTok.Line,
-			Column: lastTok.Column + len(lastTok.Lexeme),
+			Column: lastTok.Column + len([]rune(lastTok.Lexeme)),
 		}
 		tokens = append(tokens, eofToken)
 	} else {
-		// 空输入时默认位置
 		eofToken := Token{
 			Type:   "EOF",
 			Lexeme: "EOF",
@@ -215,14 +265,24 @@ func (s *Scanner) Tokenize(input string, verbose bool) []Token {
 	fmt.Println("===TOKENIZE completed <manually add EOF token>===")
 	return tokens
 }
+
+// TokenToSymbol 将 Token 映射为语法分析器的 Symbol（终结符）
 func tokenToSymbol(tok Token) syntax.Symbol {
 	switch tok.Type {
 	case TokenID:
 		return "id"
-	case TokenNUM, TokenFLO:
+	case TokenNUM:
 		return "num"
+	case TokenFLO:
+		return "float"
+	case TokenCHAR:
+		return "char"
+	case TokenSTRING:
+		return "string"
 	case TokenOP, TokenDELIM, TokenKW:
 		return syntax.Symbol(tok.Lexeme)
+	case TokenCOMMENT_SINGLE, TokenCOMMENT_MULTI:
+		return "comment" // 注释不作为语法分析的终结符
 	case TokenTYPE_KW:
 		return "type_kw" // Type keyword
 	case TokenEOF:

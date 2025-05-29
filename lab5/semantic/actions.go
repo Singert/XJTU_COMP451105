@@ -247,19 +247,30 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	30: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "num", Value: children[0].(lexer.Token).Lexeme}
 	},
-
-	// 31: Factor -> id
+	// 31: Factor -> float
 	31: func(children []interface{}) interface{} {
+		return &ASTNode{Type: "float", Value: children[0].(lexer.Token).Lexeme}
+	},
+	// 32: Factor -> char
+	32: func(children []interface{}) interface{} {
+		return &ASTNode{Type: "char", Value: children[0].(lexer.Token).Lexeme}
+	},
+	// 33: Factor -> string
+	33: func(children []interface{}) interface{} {
+		return &ASTNode{Type: "string", Value: children[0].(lexer.Token).Lexeme}
+	},
+	// 31: Factor -> id
+	34: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "id", Value: children[0].(lexer.Token).Lexeme}
 	},
 
 	// 32: Factor -> ( Expr )
-	32: func(children []interface{}) interface{} {
+	35: func(children []interface{}) interface{} {
 		return children[1]
 	},
 
 	// 33: Factor -> id MultiIndex
-	33: func(children []interface{}) interface{} {
+	36: func(children []interface{}) interface{} {
 		idToken := children[0].(lexer.Token)
 		multiIndices := children[1].([]*ASTNode)
 		return &ASTNode{
@@ -270,27 +281,27 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 34: Args -> NonEmptyArgs
-	34: func(children []interface{}) interface{} {
+	37: func(children []interface{}) interface{} {
 		return children[0].([]*ASTNode)
 	},
 
 	// 35: Args ->
-	35: func(children []interface{}) interface{} {
+	38: func(children []interface{}) interface{} {
 		return []*ASTNode{}
 	},
 
 	// 36: NonEmptyArgs -> Expr
-	36: func(children []interface{}) interface{} {
+	39: func(children []interface{}) interface{} {
 		return []*ASTNode{children[0].(*ASTNode)}
 	},
 
 	// 37: NonEmptyArgs -> NonEmptyArgs , Expr
-	37: func(children []interface{}) interface{} {
+	40: func(children []interface{}) interface{} {
 		return append(children[0].([]*ASTNode), children[2].(*ASTNode))
 	},
 
 	// 38: NonEmptyArgs -> Type id
-	38: func(children []interface{}) interface{} {
+	41: func(children []interface{}) interface{} {
 		return []*ASTNode{
 			{
 				Type:  "Arg",
@@ -301,7 +312,7 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 39: NonEmptyArgs -> Type id = Expr
-	39: func(children []interface{}) interface{} {
+	42: func(children []interface{}) interface{} {
 		return []*ASTNode{
 			{
 				Type:  "Arg",
@@ -313,7 +324,7 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 40: NonEmptyArgs -> NonEmptyArgs , Type id
-	40: func(children []interface{}) interface{} {
+	43: func(children []interface{}) interface{} {
 		args := children[0].([]*ASTNode)
 		args = append(args, &ASTNode{
 			Type:  "Arg",
@@ -324,7 +335,7 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 41: NonEmptyArgs -> NonEmptyArgs , Type id = Expr
-	41: func(children []interface{}) interface{} {
+	44: func(children []interface{}) interface{} {
 		args := children[0].([]*ASTNode)
 		args = append(args, &ASTNode{
 			Type:  "Arg",
@@ -336,17 +347,17 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 42: IndexList -> Expr
-	42: func(children []interface{}) interface{} {
+	45: func(children []interface{}) interface{} {
 		return []*ASTNode{children[0].(*ASTNode)}
 	},
 
 	// 43: IndexList -> IndexList , Expr
-	43: func(children []interface{}) interface{} {
+	46: func(children []interface{}) interface{} {
 		return append(children[0].([]*ASTNode), children[2].(*ASTNode))
 	},
 
 	// 44: Cond -> Cond && Cond
-	44: func(children []interface{}) interface{} {
+	47: func(children []interface{}) interface{} {
 		return &ASTNode{
 			Type:  "&&",
 			Left:  children[0].(*ASTNode),
@@ -355,7 +366,7 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 45: Cond -> Cond || Cond
-	45: func(children []interface{}) interface{} {
+	48: func(children []interface{}) interface{} {
 		return &ASTNode{
 			Type:  "||",
 			Left:  children[0].(*ASTNode),
@@ -364,7 +375,7 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 46: Cond -> ! Cond
-	46: func(children []interface{}) interface{} {
+	49: func(children []interface{}) interface{} {
 		return &ASTNode{
 			Type:  "!",
 			Right: children[1].(*ASTNode),
@@ -372,42 +383,42 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	},
 
 	// 47: Cond -> Expr < Expr
-	47: func(children []interface{}) interface{} {
+	50: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "<", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 48: Cond -> Expr > Expr
-	48: func(children []interface{}) interface{} {
+	51: func(children []interface{}) interface{} {
 		return &ASTNode{Type: ">", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 49: Cond -> Expr <= Expr
-	49: func(children []interface{}) interface{} {
+	52: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "<=", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 50: Cond -> Expr >= Expr
-	50: func(children []interface{}) interface{} {
+	53: func(children []interface{}) interface{} {
 		return &ASTNode{Type: ">=", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 51: Cond -> Expr != Expr
-	51: func(children []interface{}) interface{} {
+	54: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "!=", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 52: Cond -> Expr == Expr
-	52: func(children []interface{}) interface{} {
+	55: func(children []interface{}) interface{} {
 		return &ASTNode{Type: "==", Left: children[0].(*ASTNode), Right: children[2].(*ASTNode)}
 	},
 
 	// 53: Cond -> ( Cond )
-	53: func(children []interface{}) interface{} {
+	56: func(children []interface{}) interface{} {
 		return children[1]
 	},
 
 	// 54: Cond -> Expr
-	54: func(children []interface{}) interface{} {
+	57: func(children []interface{}) interface{} {
 		return children[0]
 	},
 	// // 支持数组声明：Type id [ IndexList ] ;
@@ -437,8 +448,8 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 	// 		Right: expr,
 	// 	}
 	// },
-	// 57: Decl -> Type id MultiIndex ;
-	55: func(children []interface{}) interface{} {
+	// 无初始化数组声明
+	58: func(children []interface{}) interface{} {
 		typNode := children[0].(*ASTNode)
 		idToken := children[1].(lexer.Token)
 		multiIndices := children[2].([]*ASTNode)
@@ -450,29 +461,71 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 		}
 	},
 
-	// 58: Decl -> Type id MultiIndex = Expr ;
-	56: func(children []interface{}) interface{} {
+	// 带初始化数组声明（初始化列表或字符串字面量）
+	59: func(children []interface{}) interface{} {
 		typNode := children[0].(*ASTNode)
 		idToken := children[1].(lexer.Token)
 		multiIndices := children[2].([]*ASTNode)
-		expr := children[4].(*ASTNode)
+		initExpr := children[4].(*ASTNode)
 		return &ASTNode{
 			Type:  "ArrayDeclMultiInit",
 			Value: typNode.Value,
 			Left:  &ASTNode{Type: "id", Value: idToken.Lexeme},
 			Args:  multiIndices,
-			Right: expr,
+			Right: initExpr,
 		}
 	},
-
 	// 59: MultiIndex -> [ IndexList ] MultiIndex
-	57: func(children []interface{}) interface{} {
+	60: func(children []interface{}) interface{} {
 		indexList := children[1].([]*ASTNode)
 		multiIndexNext := children[3].([]*ASTNode)
 		return append(indexList, multiIndexNext...)
 	},
 	// 60: MultiIndex -> ε
-	58: func(children []interface{}) interface{} {
+	61: func(children []interface{}) interface{} {
 		return []*ASTNode{}
+	},
+
+	// Decl -> Type id MultiIndex = InitList ;
+	62: func(children []interface{}) interface{} {
+		typNode := children[0].(*ASTNode)
+		idToken := children[1].(lexer.Token)
+		multiIndices := children[2].([]*ASTNode)
+		initList := children[4].(*ASTNode)
+		return &ASTNode{
+			Type:  "ArrayDeclMultiInitList",
+			Value: typNode.Value,
+			Left:  &ASTNode{Type: "id", Value: idToken.Lexeme},
+			Args:  multiIndices,
+			Right: initList,
+		}
+	},
+	// InitList -> { NonEmptyInitList }
+	63: func(children []interface{}) interface{} {
+		return &ASTNode{
+			Type: "InitList",
+			Args: children[1].([]*ASTNode),
+		}
+	},
+	// InitList -> {}
+	64: func(children []interface{}) interface{} {
+		return &ASTNode{
+			Type: "InitList",
+			Args: []*ASTNode{},
+		}
+	},
+
+	// NonEmptyInitList -> Expr
+	65: func(children []interface{}) interface{} {
+		return []*ASTNode{children[0].(*ASTNode)}
+	},
+
+	// NonEmptyInitList -> NonEmptyInitList , Expr
+	66: func(children []interface{}) interface{} {
+		return append(children[0].([]*ASTNode), children[2].(*ASTNode))
+	},
+	// Expr -> InitList
+	67: func(children []interface{}) interface{} {
+		return children[0]
 	},
 }
