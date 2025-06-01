@@ -8,6 +8,6 @@ digraph DFA {
   q0 -> q0 [label="b"];
   q1 -> q2 [label="a"];
   q1 -> q0 [label="b"];
-  q2 -> q2 [label="b"];
   q2 -> q2 [label="a"];
+  q2 -> q2 [label="b"];
 }

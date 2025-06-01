@@ -1,4 +1,3 @@
-网安220 常兆鑫 2226114409
 
 # 🧪 实验三报告：构建 LR(0) 项目集规范族
 
@@ -67,7 +66,7 @@ lab3/
 * 边：GOTO(I, X) ⇒ J，显示符号 X 的转移
 
 使用 Graphviz `.dot` 输出为 `dfa.dot` 文件
-
+![](./assets/dfa.png)
 ---
 
 ##  五、实验示例与结果
@@ -101,7 +100,7 @@ F  → (E) | id
 
 * 每个节点展示 Step N、当前状态栈、符号栈、输入、动作
 * 使用颜色区分：`shift`（蓝）、`reduce`（绿）、`accept`（黄）
-
+![](./assets/tree.png)
 ---
 
 ##  六、实验收获与反思
@@ -121,31 +120,5 @@ F  → (E) | id
 
 ---
 
-##  附：关键模块代码片段
-
-###  DFA 构造核心：
-
-```go
-func BuildDFA(...) {
-    // 初始项 closure({S' → ·S})
-    // 枚举符号集，执行 GOTO
-    // 哈希去重判断状态是否已存在
-}
-```
-
-###  分析器执行与记录：
-
-```go
-steps = append(steps, ParseStep{ ... })
-switch action.Type {
-case Shift:
-    ...
-case Reduce:
-    ...
-}
-ExportParseFlowDOT(steps, "parse_flow.dot")
-```
-
----
 
 
