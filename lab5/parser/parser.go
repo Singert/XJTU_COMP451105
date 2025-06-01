@@ -6,6 +6,7 @@ import (
 	"lab5/semantic"
 	"lab5/syntax"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -19,7 +20,7 @@ type ParseStep struct {
 }
 
 // 主分析函数
-func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token, verbose bool) *ParseError {
+func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, tokenStream []lexer.Token, verbose bool, filename string) *ParseError {
 	stateStack := []int{0}
 	symbolStack := []syntax.Symbol{"#"}
 	attrStack := []interface{}{"#"}
@@ -50,14 +51,14 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			if ok && action.Typ == Accept {
 				// 接受状态，语法分析成功
 				fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: 接受 ✅\n", stateStack, symbolStack, "#")
-				err := ExportParseFlowDOT(steps, "parse_flow.dot")
+				err := ExportParseFlowDOT(steps, "./output/parse_flow.dot")
 				if err == nil {
-					fmt.Println("✔ 分析流程图已导出为 parse_flow.dot（可用 dot -Tpng 查看）")
+					fmt.Println("✔ 分析流程图已导出为 ./output/parse_flow.dot（可用 dot -Tpng 查看）")
 				}
 
 				root := attrStack[len(attrStack)-1]
 				fmt.Println("======= 抽象语法树 AST =======")
-				semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
+				semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true, filename)
 				fmt.Println("======= 语义动作调用记录 =======")
 				if len(calledActionFuncs) > 0 {
 					fmt.Println("已调用的语义动作函数序号:", calledActionFuncs)
@@ -74,7 +75,6 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 		if !ok {
 			fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: ERROR\n", stateStack, symbolStack, currToken)
-			fmt.Println("111")
 			return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 		}
 
@@ -121,7 +121,6 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			rhsLen := len(prod.Right)
 			if rhsLen > len(symbolStack) {
 				fmt.Println("❌ 归约失败：符号栈不足")
-				fmt.Println("222")
 				return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 			}
 			stateStack = stateStack[:len(stateStack)-rhsLen]
@@ -132,7 +131,6 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 			newState, ok := table.Goto[top][prod.Left]
 			if !ok {
 				fmt.Println("❌ GOTO失败")
-				fmt.Println("333")
 				return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 			}
 			stateStack = append(stateStack, newState)
@@ -152,7 +150,7 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 
 		case Accept:
 			fmt.Printf("状态栈: %v\t符号栈: %v\t当前输入: %s\t动作: 接受 ✅\n", stateStack, symbolStack, currToken)
-			err := ExportParseFlowDOT(steps, "parse_flow.dot")
+			err := ExportParseFlowDOT(steps, "./output/"+"parse_flow"+"_"+filepath.Base(filename)+".dot")
 			if err == nil {
 				fmt.Println("✔ 分析流程图已导出为 parse_flow.dot（可用 dot -Tpng 查看）")
 			}
@@ -163,16 +161,19 @@ func Run(input []syntax.Symbol, g *syntax.Grammar, dfa *DFA, table *ParseTable, 
 				fmt.Println("已调用的语义动作函数序号:", calledActionFuncs)
 			}
 			fmt.Println("======= 抽象语法树 AST =======")
-			semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true)
+			fnForAst := "./output/ast_" + filepath.Base(filename) + ".txt"
+			semantic.PrintASTPretty(root.(*semantic.ASTNode), "", true, fnForAst)
+			fmt.Printf("抽象语法树已导出到 %s\n", fnForAst)
 
 			// ===== 生成四元组 =====
 			fmt.Println("======= 四元组 =======")
-			semantic.PrintQuadruples()
+			fnForQuadruples := "./output/quadruples_" + filepath.Base(filename) + ".txt"
+			semantic.PrintQuadruples(fnForQuadruples)
+			fmt.Printf("四元组已导出到 %s\n", fnForQuadruples)
 			fmt.Println("分析成功！")
 			return nil
 		default:
 			fmt.Println("动作: ERROR")
-			fmt.Println("555")
 			return CatchParseError(currState, currToken, tokenStream, tokIdx, table)
 		}
 	}

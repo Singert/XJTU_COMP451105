@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"lab5/lexer"
@@ -54,15 +55,31 @@ func TestLab5Rough(t *testing.T) {
 		symbols := utils.TokensToSymbols(tokens)
 
 		// 语法 + 语义分析
-		parsererr := parser.Run(symbols, g, dfa, table, tokens, false)
+		parsererr := parser.Run(symbols, g, dfa, table, tokens, false, file)
 		if parsererr != nil {
 			errs++
 			fmt.Println(parsererr.Error())
 		}
 	}
 	if errs > 0 {
-		fmt.Printf("🤬 测试完成！共 %d 个错误\n", errs)
+		fmt.Printf(">🌐 测试完成！共 %d 个错误\n", errs)
 		return
 	}
-	fmt.Println("🤬 测试完成！")
+	fmt.Printf(">🌟 测试完成！ 共测试通过%d 个文件 \n", len(files)-errs)
+	dotfiles, err := filepath.Glob("output/*.dot")
+	if err != nil {
+		fmt.Println("❌ 获取输出文件失败:", err)
+		return
+	}
+	for _, dotfile := range dotfiles {
+		//将dot文件转为 png
+		pngfile := dotfile[:len(dotfile)-4] + ".png"
+		cmd := exec.Command("dot", "-Tpng", dotfile, "-o", pngfile)
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("❌ 转换 %s 为 PNG 失败: %v\n", dotfile, err)
+			continue
+		}
+		fmt.Printf("✔️ 转换 %s 为 PNG 成功: %s\n", dotfile, pngfile)
+	}
 }

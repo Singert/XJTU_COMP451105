@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"lab5/lexer"
@@ -34,7 +35,7 @@ func TestLab5Detialed(t *testing.T) {
 	}
 	fmt.Println("Starting tests...")
 	// 3. 遍历 testcases 文件夹
-	files, err := filepath.Glob("testcases/finalcases/*.c")
+	files, err := filepath.Glob("testcases/*.c")
 	if err != nil {
 		fmt.Println("❌ 获取测试文件失败:", err)
 		return
@@ -53,10 +54,27 @@ func TestLab5Detialed(t *testing.T) {
 		symbols := utils.TokensToSymbols(tokens)
 		// 4. 初始化符号表
 		// 语法 + 语义分析
-		parsererr := parser.Run(symbols, g, dfa, table, tokens, true)
+
+		parsererr := parser.Run(symbols, g, dfa, table, tokens, true, file)
 		if parsererr != nil {
 			fmt.Println(parsererr.Error())
 		}
 	}
 	fmt.Println("🤬 测试完成！")
+	dotfiles, err := filepath.Glob("output/*.dot")
+	if err != nil {
+		fmt.Println("❌ 获取输出文件失败:", err)
+		return
+	}
+	for _, dotfile := range dotfiles {
+		//将dot文件转为 png
+		pngfile := dotfile[:len(dotfile)-4] + ".png"
+		cmd := exec.Command("dot", "-Tpng", dotfile, "-o", pngfile)
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("❌ 转换 %s 为 PNG 失败: %v\n", dotfile, err)
+			continue
+		}
+		fmt.Printf("✔️ 转换 %s 为 PNG 成功: %s\n", dotfile, pngfile)
+	}
 }

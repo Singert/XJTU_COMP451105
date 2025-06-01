@@ -538,7 +538,6 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 
 	// 文法 41: NonEmptyArgs -> Type id
 	41: func(children []interface{}) interface{} {
-		fmt.Printf("\n\n\nActionFuncs[41]: ASTNode = %v\n", &ASTNode{Type: "id", Value: children[1].(lexer.Token).Lexeme})
 		return []*ASTNode{
 			{
 				Type:  "Arg",
@@ -921,7 +920,6 @@ var ActionFuncs = map[int]func([]interface{}) interface{}{
 
 	// 文法 69: NonEmptyArgs -> Type id MultiIndex
 	69: func(children []interface{}) interface{} {
-		fmt.Printf("\n\n\nActionFuncs[69]\n\n\n")
 		return []*ASTNode{
 			{
 				Type:  "Arg",

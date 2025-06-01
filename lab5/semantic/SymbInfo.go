@@ -90,3 +90,6 @@ func (st *SymbolTable) MarkSymbolInitialized(name syntax.Symbol) error {
     symbolInfo.IsInit = true
     return nil
 }
+
+
+

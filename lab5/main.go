@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"lab5/lexer"
 	"lab5/parser"
 	"lab5/syntax"
@@ -9,6 +10,10 @@ import (
 )
 
 func main() {
+	sf := flag.String("source", "./assets/source.c", "Source code file to parse")
+	flag.StringVar(sf, "source", "./assets/source.c", "Source code file to parse")
+	flag.Parse()
+
 	// 1. 加载 DFA
 	dfas, _ := lexer.LoadMultiDFAFromJson("./assets/all_dfa.json", "./dot", false)
 	scanner := lexer.NewScanner()
@@ -17,11 +22,11 @@ func main() {
 	}
 
 	// 2. 读取源代码
-	codeBytes, _ := os.ReadFile("./assets/source.c")
+	codeBytes, _ := os.ReadFile(*sf)
 	code := string(codeBytes)
 
 	// 3. Tokenize → Symbol
-	tokens := scanner.Tokenize(code,false)
+	tokens := scanner.Tokenize(code, true)
 	symbols := utils.TokensToSymbols(tokens)
 
 	// 4. 构造文法
@@ -33,7 +38,7 @@ func main() {
 	table := parser.BuildParseTable(g, dfa, follow)
 
 	// 6. 调用 parser + 语义分析
-	parser.Run(symbols, g, dfa, table, tokens,false)
+	parser.Run(symbols, g, dfa, table, tokens, false, (*sf))
 }
 
 // ---
