@@ -1,1 +1,0 @@
-/usr/bin/clang++  -pthread -rdynamic CMakeFiles/smlt.dir/simulation.o -o smlt 

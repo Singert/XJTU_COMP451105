@@ -1,0 +1,51 @@
+digraph SDI_SDF_ADD_DFA {
+    rankdir=LR;
+    node [shape = circle];
+
+    // 状态定义
+    q0 [label="q0 (start)"];
+    q1 [label="q1 (+/-)"];
+    q2 [label="q2 digit"];
+    q3 [label="q3 digits"];
+    q4 [label="q4 dot"];
+    q5 [label="q5 fraction digit"];
+    q6 [label="q6 fraction digits"];
+    q7 [label="q7 ADD"];
+    q8 [label="q8 . start"];
+    q9 [label="q9 . + digit"];
+    q_accept_sdi [shape=doublecircle, label="SDI"];
+    q_accept_sdf [shape=doublecircle, label="SDF"];
+    q_accept_add [shape=doublecircle, label="ADD"];
+
+    // +/-
+    q0 -> q1 [label="+ / -"];
+    q0 -> q2 [label="[1-9]"];
+    q0 -> q8 [label="."];
+
+    // digit 开始整数部分
+    q1 -> q2 [label="[1-9]"];
+    q2 -> q3 [label="[0-9]"];
+    q2 -> q_accept_sdi [label="other"];
+    q3 -> q3 [label="[0-9]"];
+    q3 -> q4 [label="."];
+    q3 -> q_accept_sdi [label="other"];
+
+    // ADD 分支
+    q0 -> q7 [label="+"];
+    q7 -> q_accept_add [label="other"];
+
+    // . 后跟数字（定点）
+    q4 -> q5 [label="[0-9]"];
+    q5 -> q6 [label="[0-9]"];
+    q6 -> q6 [label="[0-9]"];
+    q6 -> q_accept_sdf [label="other"];
+    q5 -> q_accept_sdf [label="other"];
+
+    // 处理.开头的浮点数
+    q8 -> q9 [label="[0-9]"];
+    q9 -> q6 [label="[0-9]"];
+
+    // SDF 接受路径
+    q4 -> q5;
+    q5 -> q_accept_sdf;
+}

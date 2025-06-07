@@ -1,0 +1,18 @@
+digraph eNFA_2_6 {
+    rankdir=LR;
+    size="8,5";
+
+    node [shape = circle];
+    q [label="q"];
+    p [label="p"];
+    r [label="r", shape=doublecircle];
+
+    start [shape=point];
+    start -> q;
+
+    q -> q [label="b"];
+    q -> p [label="ε"];
+    q -> r [label="ε"];
+    p -> p [label="a"];
+    r -> r [label="c"];
+}

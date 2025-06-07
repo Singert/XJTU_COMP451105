@@ -1,0 +1,20 @@
+digraph DFA_2_6 {
+    rankdir=LR;
+    size="10,6";
+
+    node [shape = circle];
+    A [label="{q,p,r}", shape=doublecircle];
+    B [label="{p}"];
+    C [label="{q}"];
+    D [label="{r}", shape=doublecircle];
+
+    start [shape=point];
+    start -> A;
+
+    A -> B [label="a"];
+    A -> C [label="b"];
+    A -> D [label="c"];
+    B -> B [label="a"];
+    C -> C [label="b"];
+    D -> D [label="c"];
+}
