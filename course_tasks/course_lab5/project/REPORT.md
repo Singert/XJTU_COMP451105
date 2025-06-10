@@ -1,148 +1,206 @@
----
-网安2201常兆鑫2226114409 独自完成
 
 ---
 
-# ✅ 实验报告：基于 Go 的中间代码生成器设计与实现
+# 中间代码生成器作业报告
 
-## 一、实验目的
+## 一、实验背景
 
-本实验旨在设计并实现一个小型语言的中间代码生成系统，支持以简洁 Go 模块为基础的源代码解析、语义分析与三地址码（TAC）生成，为后续编译优化与代码生成打下基础。
+本实验旨在通过实现一个中间代码生成器，将源程序的结构化源代码转化为中间代码（三地址代码）。三地址代码是编译过程中间的一种表达方式，通常用于后续的优化和目标代码生成。实验主要包括以下任务：
 
----
+* **词法分析**：将源代码分割为一系列的标记（tokens）。
+* **语法分析**：将标记转换为抽象语法树（AST）或类似结构。
+* **中间代码生成**：根据语法分析结果，生成三地址代码（TAC）。
 
-## 二、实现功能概述
+本实验中，主要解析了具有函数定义、条件语句、循环语句及函数调用等特征的C风格源代码。
 
-本系统支持如下语言特性对应的中间代码生成：
+## 二、项目概述
 
-| 功能类别              | 支持情况 | 示例                              |   |                 |
-| ----------------- | ---- | ------------------------------- | - | --------------- |
-| 变量赋值 `d = E`      | ✅    | `x = a + b * c - d;`            |   |                 |
-| return 语句         | ✅    | `return x + 1;`                 |   |                 |
-| 函数调用 `d(Ř)`       | ✅    | `foo(a + 1, b);`                |   |                 |
-| 数组赋值 `a[Ě] = E`   | ✅    | `a[i+1,j*2,4] = 66;`            |   |                 |
-| 条件语句 if           | ✅    | `if (x < y) a = 1;`             |   |                 |
-| if-else           | ✅    | `if (x < y) a = 1; else a = 0;` |   |                 |
-| while 循环          | ✅    | `while (x < 10) y = y + 1;`     |   |                 |
-| 布尔表达式 &&, \|\|, ! | ✅    | \`if ((x < 1                    |   | y < 2) && !z)\` |
-| 块语句 `{ S1; S2; }` | ✅    | `if (...) { a = 1; b = 2; }`    |   |                 |
+该项目的核心目标是实现一个中间代码生成器，能够从源代码（例如 `main.src` 文件）生成相应的三地址代码。具体步骤如下：
 
----
+1. **词法分析**：解析源代码并将其转化为标记（tokens）。
+2. **语法分析**：根据标记解析出程序结构，并将其组织成适当的语句或表达式。
+3. **中间代码生成**：根据解析结果生成三地址代码，用于后续的优化和目标代码生成。
 
-## 三、项目模块结构与职责划分
+### 项目目录结构
 
 ```
-project/
-├── main.go            // 主函数：读取 JSON 测试用例并驱动生成
-├── test_case.json     // 含测试目的 + 代码的输入数据集
-├── lexer/lexer.go     // 词法分析：将代码字符串切分为 token 序列
-├── parser/parser.go   // 顶层分发：转发给 stmt 模块
-├── stmt/              // 各类语句模块定义
-│   ├── dispatch.go        // 统一分发入口 Dispatch([]string)
-│   ├── if.go              // if / if-else 的解析与跳转生成
-│   ├── while.go           // while 结构的入口与循环体生成
-│   ├── return.go          // return 的表达式求值与生成
-│   ├── call.go            // 函数调用：参数倒序传参 + CALL
-│   ├── array_assign.go    // 数组赋值表达式及偏移计算
-│   ├── stmtlist.go        // 块结构 `{ ... }` 多语句处理器
-│   └── util.go            // 通用辅助函数，如括号匹配等
-├── boolean/expr.go    // 逻辑表达式短路生成器：支持 &&, ||, !, ()
-├── expr/expr.go       // 表达式求值器：支持算术表达式与临时变量生成
-├── generator/tac.go   // 初期测试用静态样例输出（现已弃用）
+├── assets
+├── boolean
+│   └── expr.go          // 布尔表达式生成
+├── expr
+│   └── expr.go          // 表达式生成工具
+├── generator
+│   └── tac.go           // 三地址代码生成
+├── lexer
+│   └── lexer.go         // 词法分析器
+├── parser
+│   └── parser.go        // 语法分析器
+├── stmt
+│   ├── array_assign.go  // 数组赋值语句处理
+│   ├── call.go          // 函数调用处理
+│   ├── dispatch.go      // 语句分发处理
+│   ├── function.go      // 函数定义处理
+│   ├── if.go            // if语句处理
+│   ├── return.go        // return语句处理
+│   ├── stmtlist.go      // 语句块处理
+│   └── while.go         // while语句处理
+└── main.go              // 主入口文件
 ```
 
----
+## 三、核心技术实现
 
-## 四、核心模块实现要点
+### 1. **词法分析（Tokenizer）**
 
-### 1. `lexer.go`：支持多字符符号识别
+词法分析器的任务是将源代码字符串转化为一系列的标记。主要使用了字符流解析技术，处理了包括数字、标识符、运算符等在内的各种语言元素。
 
-* 自动识别 `!=`, `<=`, `>=`, `==` 为单 token，避免分裂成 `!` 与 `=`。
-
-### 2. `expr.go`：表达式左结合求值
-
-* 利用栈式遍历生成临时变量 `t1`, `t2`, ...
-* 支持如 `a + b * c - d` 的算术表达式组合。
-
-### 3. `boolean/expr.go`：支持短路逻辑的布尔表达式生成
-
-* 实现了如下语义：
-
-  * `B → B1 || B2`：左真跳真，左假跳右
-  * `B → B1 && B2`：左假跳假，左真跳右
-  * `B → !B`：真假跳转互换
-  * `B → (B)`：递归展开
-
-### 4. `stmt/stmtlist.go`：支持复合语句 `{ ... }`
-
-* 维护语法嵌套层级 `level`，仅在分号层级为 0 时切分子句
-* 自动识别内部语句是否为控制结构或嵌套语句块
-
-### 5. `dispatch.go`：统一语句调度器
-
-* 代替原 `parser.go` 中分发逻辑
-* 调用 `GenerateIfElse`、`GenerateWhile`、`GenerateReturn` 等模块
-* 解决模块循环 import 的设计冲突
-
----
-
-## 五、main.go 测试入口
-
-* 支持读取 `test_case.json` 文件格式如下：
-
-```json
-[
-  {
-    "purpose": "if-else 结构测试",
-    "code": "if (x < y) a = 1; else a = 0;"
-  },
-  ...
-]
+```go
+func Tokenize(input string) []string {
+    var tokens []string
+    current := ""
+    runes := []rune(input)
+    ...
+    // 处理标识符、运算符和括号
+}
 ```
 
-* 每个用例输出结构清晰：
+### 2. **语法分析（Parser）**
 
-  * ⭐ 测试目的
-  * 🧪 输入语句
-  * 💡 三地址代码
+语法分析器负责解析标记并将其组织成语法结构。具体使用了递归下降法（Recursive Descent Parsing）来处理不同的语句和表达式。
 
----
-
-## 六、模块关系图
-
-```
-main.go
-  ↓
-  lexer.Tokenize()
-  ↓
-  parser.ParseAndGenerateTAC()
-  ↓
-  stmt.Dispatch()
-    ├── if.go / while.go / return.go ...
-    ├── stmtlist.go（用于 {} 递归块）
-    └── expr / boolean 中调用 GenerateXXX()
+```go
+func ParseProgram(tokens []string) []string {
+    var code []string
+    i := 0
+    for i < len(tokens) {
+        end := findStmtEnd(tokens, i)
+        stmtTokens := tokens[i:end]
+        stmtCode := stmt.Dispatch(stmtTokens)
+        code = append(code, stmtCode...)
+        i = end
+    }
+    return code
+}
 ```
 
----
-## 运行截图
-![运行结果](./assets/屏幕截图%202025-05-22%20224216.png)
-![运行结果](./assets/屏幕截图%202025-05-22%20224255.png)
----
-## 八、总结与展望
+### 3. **三地址代码生成**
 
-本系统在保持模块划分清晰、代码量简洁的前提下，成功实现了：
+三地址代码生成的核心是将解析后的语法结构转换为三地址代码。主要操作包括处理算术运算、条件语句、循环结构等。三地址代码的生成函数会为每个语句生成一系列中间操作，如加法、赋值、条件跳转等。
 
-* 表达式求值、临时变量管理
-* 短路布尔表达式逻辑
-* 所有主要语句类型及语句块支持
-* 多层嵌套控制流结构的正确处理
+```go
+func GenerateFunctionDef(tokens []string) []string {
+    ...
+    // 处理函数参数、函数体以及局部变量
+}
+```
 
-### 📌 后续可拓展方向：
+### 4. **语句分发（Dispatch）**
 
-* 支持函数定义与作用域隔离
-* 支持 AST 构建与优化
-* 增加错误恢复机制与类型检查
-* 输出四元式表结构用于优化与生成目标代码
+根据不同的语法结构（如函数定义、赋值语句、条件语句等），语句分发函数将调用相应的生成函数进行处理。
 
----
+```go
+func Dispatch(tokens []string) []string {
+    ...
+    // 判断并调用不同的生成函数（如GenerateFunctionDef，GenerateIfElse等）
+}
+```
 
+## 四、实验中的关键问题与修复
+
+### 1. **函数参数解析问题**
+
+在处理函数定义时，遇到函数指针作为参数（如 `int soo()`）时，解析存在问题。为解决此问题，修改了参数提取逻辑，正确跳过了函数指针类型。
+
+修复后的代码：
+
+```go
+for ; tokens[i] != ")"; i++ {
+    if tokens[i] == "," || tokens[i] == "int" || tokens[i] == "void" {
+        continue
+    }
+    if tokens[i+1] == "(" {
+        params = append(params, tokens[i])
+        for tokens[i] != ")" {
+            i++
+        }
+    } else {
+        params = append(params, tokens[i])
+    }
+}
+```
+
+### 2. **嵌套函数解析顺序错误**
+
+在解析嵌套函数时，顺序没有正确处理，导致部分函数未被正确生成。通过改进 `ParseStmtList()` 中对函数体的递归处理，解决了该问题。
+
+修复后的代码：
+
+```go
+stmtTokens := inner[start : braceEnd+1]
+stmtCode := GenerateFunctionDef(stmtTokens[1:])
+code = append(code, stmtCode...)
+start = braceEnd + 1
+continue // 确保函数解析顺序正确
+```
+
+### 3. **三地址代码生成错误**
+
+生成的三地址代码中出现了无关的 `t1 = i + 1` 等多余操作，原因是 fallback 机制未能准确判断是否是合法的三地址代码生成结构。通过增强函数调用条件，确保只有在正确的情况下生成代码。
+
+修复后的代码：
+
+```go
+if len(tokens) >= 4 && tokens[1] == "(" && tokens[len(tokens)-1] == ";" {
+    paren := 0
+    for i := 1; i < len(tokens)-1; i++ {
+        if tokens[i] == "(" {
+            paren++
+        } else if tokens[i] == ")" {
+            paren--
+        }
+    }
+    if paren == 0 {
+        return GenerateFunctionCall(tokens)
+    }
+}
+```
+
+## 五、实验结果
+
+通过修复上述问题，程序成功生成了对于题目11.2给出的源代码符合预期的三地址代码，完整的输出如下：
+
+```txt
+LABEL FUNC_raw
+POP x
+t1 = x + 5
+y = t1
+RETURN y
+ENDFUNC raw
+LABEL FUNC_foo
+POP y
+LABEL FUNC_bar
+POP x
+POP soo
+t2 = x > 3
+IF t2 != 0 THEN L1 ELSE L2
+LABEL L1
+t3 = x / 3
+PAR soo
+PAR t3
+t4 = CALL bar, 2
+GOTO L3
+LABEL L2
+z = soo
+LABEL L3
+PRINT z
+ENDFUNC bar
+PAR raw
+PAR y
+t5 = CALL bar, 2
+ENDFUNC foo
+PAR 6
+t6 = CALL foo, 1
+```
+
+## 六、总结
+
+本实验成功实现了一个中间代码生成器，能够从源代码中解析出三地址代码。通过对词法分析、语法分析以及三地址代码生成过程的逐步改进，我们解决了嵌套函数解析、函数指针参数处理以及代码生成中的冗余问题。未来可以继续扩展对更多语言特性的支持，如数组操作、结构体支持等。

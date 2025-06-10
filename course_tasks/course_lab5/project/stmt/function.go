@@ -61,7 +61,16 @@ func GenerateFunctionDef(tokens []string) []string {
 	params := []string{}
 	i := 2
 	for ; tokens[i] != ")"; i++ {
-		if tokens[i] != "," && tokens[i] != "int" && tokens[i] != "void" && tokens[i] != "(" && tokens[i] != ")" {
+		if tokens[i] == "," || tokens[i] == "int" || tokens[i] == "void" {
+			continue
+		}
+		if tokens[i+1] == "(" {
+			// 跳过函数指针参数 e.g. int soo()
+			params = append(params, tokens[i])
+			for tokens[i] != ")" {
+				i++
+			}
+		} else {
 			params = append(params, tokens[i])
 		}
 	}
@@ -75,12 +84,13 @@ func GenerateFunctionDef(tokens []string) []string {
 		code = append(code, fmt.Sprintf("POP %s", params[j]))
 	}
 
-	// 支持语句块或单条语句体
+	// 处理函数体：递归调用 Dispatch 处理语句块
 	var bodyTokens []string
 	if bodyStart < len(tokens) && tokens[bodyStart] == "{" {
 		bodyEnd := FindCloseBrace(tokens, bodyStart)
 		bodyTokens = tokens[bodyStart : bodyEnd+1]
 	} else {
+		// 非块语句体
 		bodyEnd := bodyStart
 		for bodyEnd < len(tokens) && tokens[bodyEnd] != ";" {
 			bodyEnd++
@@ -88,7 +98,7 @@ func GenerateFunctionDef(tokens []string) []string {
 		bodyTokens = tokens[bodyStart : bodyEnd+1]
 	}
 
-	// ✅ 此处改为递归使用 Dispatch（而非 ParseStmtList）
+	// 递归调用 Dispatch 处理函数体中的语句（支持嵌套调用）
 	bodyCode := Dispatch(bodyTokens)
 	code = append(code, bodyCode...)
 	code = append(code, fmt.Sprintf("ENDFUNC %s", funcName))

@@ -1,5 +1,10 @@
 package stmt
 
+import (
+	"fmt"
+	"strings"
+)
+
 // ParseStmtList 拆分 { ... } 中多个语句（支持控制结构、嵌套函数）
 func ParseStmtList(tokens []string) []string {
 	if tokens[0] != "{" || tokens[len(tokens)-1] != "}" {
@@ -10,17 +15,32 @@ func ParseStmtList(tokens []string) []string {
 	code := []string{}
 	start := 0
 	for start < len(inner) {
-		end := findStmtEnd(inner, start)
-		stmtTokens := inner[start:end]
+		fmt.Println("🧪 start=", start, "token=", inner[start])
 
-		if len(stmtTokens) > 3 && (stmtTokens[0] == "int" || stmtTokens[0] == "void") && stmtTokens[2] == "(" {
-			stmtCode := GenerateFunctionDef(stmtTokens[1:]) // 递归函数定义
-			code = append(code, stmtCode...)
-		} else {
-			stmtCode := Dispatch(stmtTokens)
-			code = append(code, stmtCode...)
+		// 在 ParseStmtList 中增强对函数定义的支持
+		if (inner[start] == "int" || inner[start] == "void") &&
+			start+2 < len(inner) && inner[start+2] == "(" {
+
+			parenEnd := FindCloseParen(inner, start+2)
+			if parenEnd+1 < len(inner) && inner[parenEnd+1] == "{" {
+				braceEnd := FindCloseBrace(inner, parenEnd+1)
+				// 正确地独立处理嵌套函数定义
+				stmtTokens := inner[start : braceEnd+1]
+				stmtCode := GenerateFunctionDef(stmtTokens[1:])
+				code = append(code, stmtCode...)
+				start = braceEnd + 1
+				continue // 缺失此处可能会造成语句重复分析
+
+			}
 		}
 
+		// 默认处理（if, while, 普通语句）
+		end := findStmtEnd(inner, start)
+		stmtTokens := inner[start:end]
+		fmt.Println("🧩 StmtTokens:", strings.Join(stmtTokens, " "))
+
+		stmtCode := Dispatch(stmtTokens)
+		code = append(code, stmtCode...)
 		start = end
 	}
 	return code
@@ -66,16 +86,13 @@ func findStmtEnd(tokens []string, start int) int {
 	}
 
 	// 函数定义 int foo(...) 或 void bar(...)
-	if (tok == "int" || tok == "void") && start+1 < len(tokens) {
-		for i := start + 1; i < len(tokens); i++ {
-			if tokens[i] == "(" {
-				parenEnd := FindCloseParen(tokens, i)
-				if parenEnd+1 < len(tokens) && tokens[parenEnd+1] == "{" {
-					braceEnd := FindCloseBrace(tokens, parenEnd+1)
-					return braceEnd + 1
-				}
-				break
-			}
+	if (tok == "int" || tok == "void") &&
+		start+2 < len(tokens) && tokens[start+2] == "(" {
+
+		parenEnd := FindCloseParen(tokens, start+2)
+		if parenEnd+1 < len(tokens) && tokens[parenEnd+1] == "{" {
+			braceEnd := FindCloseBrace(tokens, parenEnd+1)
+			return braceEnd + 1
 		}
 	}
 

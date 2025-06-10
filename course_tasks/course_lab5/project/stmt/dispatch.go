@@ -51,8 +51,18 @@ func Dispatch(tokens []string) []string {
 	}
 
 	// 函数调用 foo(...);
-	if len(tokens) > 1 && tokens[1] == "(" && tokens[len(tokens)-1] == ";" {
-		return GenerateFunctionCall(tokens)
+	if len(tokens) >= 4 && tokens[1] == "(" && tokens[len(tokens)-1] == ";" {
+		paren := 0
+		for i := 1; i < len(tokens)-1; i++ {
+			if tokens[i] == "(" {
+				paren++
+			} else if tokens[i] == ")" {
+				paren--
+			}
+		}
+		if paren == 0 {
+			return GenerateFunctionCall(tokens)
+		}
 	}
 
 	// 赋值语句 a = ...
