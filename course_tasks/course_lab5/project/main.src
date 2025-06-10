@@ -1,0 +1,18 @@
+int raw(int x) {
+    y = x + 5;
+    return y;
+}
+
+void foo(int y) {
+    int z;
+    void bar(int x, int soo()) {
+        if (x > 3)
+            bar(x / 3, soo);
+        else
+            z = soo(x);
+        print z;
+    }
+    bar(y, raw);
+}
+
+foo(6);

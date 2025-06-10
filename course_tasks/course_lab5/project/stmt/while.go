@@ -8,7 +8,7 @@ import (
 
 // 支持 while (B) S;
 func GenerateWhile(tokens []string) []string {
-	condEnd := findCloseParen(tokens, 1)
+	condEnd := FindCloseParen(tokens, 1)
 	condTokens := tokens[2:condEnd]
 	bexpr := boolean.GenerateBoolExpr(condTokens)
 
@@ -16,7 +16,7 @@ func GenerateWhile(tokens []string) []string {
 	var bodyCode []string
 
 	if tokens[bodyStart] == "{" {
-		blockEnd := findCloseBrace(tokens, bodyStart)
+		blockEnd := FindCloseBrace(tokens, bodyStart)
 		bodyTokens := tokens[bodyStart : blockEnd+1]
 		bodyCode = ParseStmtList(bodyTokens)
 	} else {

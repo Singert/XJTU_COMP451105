@@ -1,37 +1,70 @@
 package stmt
 
 import (
+	"fmt"
 	"project/expr"
 	"project/generator"
+	"strings"
 )
 
-// 核心函数：根据 token 判别语句类型并生成三地址码
+// Dispatch 根据 token 判别语句类型并生成三地址码
 func Dispatch(tokens []string) []string {
-	if len(tokens) > 0 && tokens[0] == "if" && contains(tokens, "else") {
-		return GenerateIfElse(tokens)
-	} else if len(tokens) > 0 && tokens[0] == "while" {
-		return GenerateWhile(tokens)
-	} else if len(tokens) > 0 && tokens[0] == "return" {
-		return GenerateReturn(tokens)
-	} else if len(tokens) > 1 && tokens[1] == "(" {
-		return GenerateFunctionCall(tokens)
-	} else if len(tokens) >= 3 && tokens[1] == "=" {
-		if tokens[2] == "{" { // 支持数组赋值右值为语句块的情况（可选扩展）
-			return ParseStmtList(tokens[2:])
-		}
-		return expr.GenerateAssignExpr(tokens)
-	} else if len(tokens) >= 4 && tokens[1] == "[" {
-		return GenerateArrayAssignment(tokens)
-	} else if len(tokens) > 0 && tokens[0] == "{" {
-		return ParseStmtList(tokens)
-	} else if len(tokens) > 0 && tokens[0] == "if" {
-		return generator.GenerateIfStatement() // 老的测试分支
-	} else {
-		return generator.GenerateExampleArrayAssignment() // fallback 示例
+
+	fmt.Println("🔍 Dispatch tokens:", strings.Join(tokens, " "))
+	if len(tokens) == 0 {
+		return nil
 	}
+
+	// 函数定义（int foo(...) 或 void foo(...)）
+	if len(tokens) > 3 && (tokens[0] == "int" || tokens[0] == "void") && tokens[2] == "(" {
+		return GenerateFunctionDef(tokens[1:]) // 跳过类型
+	}
+
+	// if-else 分支
+	if tokens[0] == "if" && contains(tokens, "else") {
+		return GenerateIfElse(tokens)
+	}
+
+	// while 循环
+	if tokens[0] == "while" {
+		return GenerateWhile(tokens)
+	}
+
+	// return 表达式
+	if tokens[0] == "return" {
+		return GenerateReturn(tokens)
+	}
+
+	// print 语句
+	if tokens[0] == "print" && len(tokens) >= 2 && tokens[len(tokens)-1] == ";" {
+		return []string{fmt.Sprintf("PRINT %s", tokens[1])}
+	}
+
+	// 语句块 { ... }
+	if tokens[0] == "{" {
+		return ParseStmtList(tokens)
+	}
+
+	// 数组赋值 a[...,...] = ...
+	if len(tokens) >= 4 && tokens[1] == "[" {
+		return GenerateArrayAssignment(tokens)
+	}
+
+	// 函数调用 foo(...);
+	if len(tokens) > 1 && tokens[1] == "(" && tokens[len(tokens)-1] == ";" {
+		return GenerateFunctionCall(tokens)
+	}
+
+	// 赋值语句 a = ...
+	if len(tokens) >= 3 && tokens[1] == "=" {
+		return expr.GenerateAssignExpr(tokens)
+	}
+
+	// fallback 示例
+	return generator.GenerateExampleArrayAssignment()
 }
 
-// 工具：判断 token 序列中是否包含某个字符串
+// 判断 tokens 中是否包含指定字符串
 func contains(tokens []string, s string) bool {
 	for _, tok := range tokens {
 		if tok == s {

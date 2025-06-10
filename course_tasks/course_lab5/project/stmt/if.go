@@ -6,7 +6,7 @@ import (
 	"project/expr"
 )
 
-// 支持 if (B) S; else S;
+// 支持 if (B) S; else S; 或 块语句 { ... }
 func GenerateIfElse(tokens []string) []string {
 	condEnd := findCloseParen(tokens, 1)
 	condTokens := tokens[2:condEnd]
@@ -15,30 +15,45 @@ func GenerateIfElse(tokens []string) []string {
 	var thenCode, elseCode []string
 	thenStart := condEnd + 1
 
-	// 块语句 then
+	// THEN 分支
 	if tokens[thenStart] == "{" {
 		blockEnd := findCloseBrace(tokens, thenStart)
-		thenAssign := tokens[thenStart : blockEnd+1]
-		thenCode = ParseStmtList(thenAssign)
-
+		thenBlock := tokens[thenStart : blockEnd+1]
+		thenCode = ParseStmtList(thenBlock)
 		elseStart := blockEnd + 2
-		blockEnd2 := findCloseBrace(tokens, elseStart)
-		elseAssign := tokens[elseStart : blockEnd2+1]
-		elseCode = ParseStmtList(elseAssign)
+
+		if tokens[elseStart] == "{" {
+			blockEnd2 := findCloseBrace(tokens, elseStart)
+			elseBlock := tokens[elseStart : blockEnd2+1]
+			elseCode = ParseStmtList(elseBlock)
+		} else {
+			// else 后单条语句
+			elseEnd := elseStart
+			for ; elseEnd < len(tokens); elseEnd++ {
+				if tokens[elseEnd] == ";" {
+					break
+				}
+			}
+			elseCode = Dispatch(tokens[elseStart : elseEnd+1])
+		}
 	} else {
-		// 单条语句 then
+		// then 后单条语句
 		thenEnd := thenStart
 		for ; thenEnd < len(tokens); thenEnd++ {
 			if tokens[thenEnd] == ";" {
 				break
 			}
 		}
-		thenAssign := tokens[thenStart : thenEnd+1]
-		thenCode = expr.GenerateAssignExpr(thenAssign)
+		thenCode = Dispatch(tokens[thenStart : thenEnd+1])
 
 		elseStart := thenEnd + 2
-		elseAssign := tokens[elseStart:]
-		elseCode = expr.GenerateAssignExpr(elseAssign)
+		elseEnd := elseStart
+		for ; elseEnd < len(tokens); elseEnd++ {
+			if tokens[elseEnd] == ";" {
+				break
+			}
+		}
+		elseCode = Dispatch(tokens[elseStart : elseEnd+1])
 	}
 
 	endLabel := expr.NewLabel()
@@ -53,6 +68,23 @@ func GenerateIfElse(tokens []string) []string {
 	return code
 }
 
+// 小括号匹配（用于 if(...)）
+func findCloseParen(tokens []string, start int) int {
+	level := 0
+	for i := start; i < len(tokens); i++ {
+		if tokens[i] == "(" {
+			level++
+		} else if tokens[i] == ")" {
+			level--
+			if level == 0 {
+				return i
+			}
+		}
+	}
+	panic("Unmatched parenthesis")
+}
+
+// 大括号匹配（用于块语句）
 func findCloseBrace(tokens []string, start int) int {
 	level := 0
 	for i := start; i < len(tokens); i++ {
