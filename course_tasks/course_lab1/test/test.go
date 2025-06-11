@@ -7,10 +7,24 @@ import (
 
 func TestManual() {
 	code := `
-int fact(int n, int a) {
-    if (n <= 1) return a;
-    else return fact(n - 1, n * a);
-}`
+int raw(int x) {
+    y = x + 5;
+    return y;
+}
+
+void foo(int y) {
+    int z;
+    void bar(int x, int soo()) {
+        if (x > 3)
+            bar(x / 3, soo);
+        else
+            z = soo(x);
+        print z;
+    }
+    bar(y, raw);
+}
+
+foo(6);`
 	sc := scanner.NewScanner(code)
 	tokens := sc.Scan()
 

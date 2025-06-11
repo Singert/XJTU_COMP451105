@@ -1,10 +1,9 @@
-班级： 网安2201
-姓名： 常兆鑫
-学号： 2226114409
 
-# ✅ 实验报告：词法分析器设计与实现（基于 DFA）
+---
 
-## 一、实验名称
+# 大作业一报告：词法分析器设计与实现（基于 DFA）
+
+## 一、作业背景
 
 词法分析实验：设计并实现 σ-DFA 及词法分析器，生成词法记号串。
 
@@ -80,10 +79,25 @@ lexer/
 ### 📌 输入（test/manual\_test.go 内置）
 
 ```c
-int fact(int n, int a) {
-    if (n <= 1) return a;
-    else return fact(n - 1, n * a);
+int raw(int x) {
+    y = x + 5;
+    return y;
 }
+
+void foo(int y) {
+    int z;
+    void bar(int x, int soo()) {
+        if (x > 3)
+            bar(x / 3, soo);
+        else
+            z = soo(x);
+        print z;
+    }
+    bar(y, raw);
+}
+
+foo(6);
+
 ```
 
 ### ✅ 输出词法记号串（部分）

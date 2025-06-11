@@ -1,0 +1,26 @@
+[
+  {
+    "purpose": "简单赋值语句",
+    "code": "x = a + 1;"
+  },
+  {
+    "purpose": "函数调用",
+    "code": "foo(a + 1, b, c * d);"
+  },
+  {
+    "purpose": "数组赋值",
+    "code": "arr[i + 1, j * 2, 4] = 99;"
+  },
+  {
+    "purpose": "if-else + 简单布尔表达式",
+    "code": "if (x < y) a = 1; else a = 0;"
+  },
+  {
+    "purpose": "if-else + 复合布尔表达式与语句块",
+    "code": "if ((x < 1 || y < 2) && !z) { a = 1; b = b + 2; } else { a = 0; b = b - 1; }"
+  },
+  {
+    "purpose": "while + 多语句 + 布尔表达式",
+    "code": "while ((x < 5 && y != 0)) { x = x + 1; y = y - 1; }"
+  }
+]
